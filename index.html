@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fallout D20 Manager (Complete & Fixed)</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #10b981;
+            --accent-color: #10b981;
+            --danger-color: #ef4444;
+            --pip-bg: #000000;
+            --pip-green: #10b981; 
+            --pip-dim: #054b35;
+        }
+        body { font-family: 'Consolas', 'Courier New', monospace; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
+        .hidden { display: none !important; }
+        .btn-group { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        button { padding: 10px 20px; background-color: var(--accent-color); color: #000; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: 'Consolas', monospace; transition: all 0.1s; }
+        button:hover { opacity: 0.8; box-shadow: 0 0 15px var(--accent-color); }
+        button:disabled { background-color: #333; color: #666; cursor: not-allowed; box-shadow: none; }
+        button.secondary { background-color: #444; color: white; }
+        button.pip-btn { background-color: black; color: var(--pip-green); border: 1px solid var(--pip-green); }
+        .delete-btn { background: transparent; color: var(--danger-color); border: 1px solid var(--danger-color); padding: 2px 6px; font-size: 0.8rem; margin-left: 10px; cursor: pointer; border-radius: 4px; }
+        .delete-btn:hover { background: var(--danger-color); color: white; }
+        .mascot-container { width: 100px; height: 100px; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; }
+        .mascot-icon { width: 100%; height: 100%; fill: var(--accent-color); filter: drop-shadow(0 0 5px var(--accent-color)); }
+        
+        #terminalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 2147483647; display: none; flex-direction: column; padding: 40px; box-sizing: border-box; color: var(--accent-color); font-size: 20px; font-weight: bold; font-family: 'Consolas', monospace; text-shadow: 0 0 4px var(--accent-color); }
+        #staticOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2147483648; display: none; background-image: repeating-linear-gradient(0deg, transparent, transparent 1px, #111 2px, #222 3px); background-size: 100% 4px; mix-blend-mode: hard-light; }
+        @keyframes staticChannelChange { 0% { display: block; opacity: 0; transform: scaleY(1); filter: brightness(1); } 10% { opacity: 1; transform: scaleY(0.01); background-color: white; filter: brightness(100); } 30% { opacity: 1; transform: scaleY(1.2); background-color: #333; filter: brightness(1); } 50% { opacity: 0.8; transform: skewX(10deg); } 100% { display: none; opacity: 0; transform: skewX(0); } }
+        .channel-change { display: block !important; animation: staticChannelChange 0.4s ease-out forwards; }
+        #terminalContent { white-space: pre-wrap; width: 100%; height: 100%; overflow-y: hidden; text-transform: uppercase; }
+        #successMessageContainer { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
+        #finalGif { max-width: 250px; height: auto; margin-bottom: 30px; mix-blend-mode: screen; filter: contrast(150%) drop-shadow(0 0 5px var(--accent-color)); opacity: 0; transition: opacity 0.5s ease-in; background: black; }
+        .success-text { font-size: 2.5rem; text-transform: uppercase; letter-spacing: 3px; text-shadow: 0 0 10px var(--accent-color); opacity: 0; transition: opacity 1s ease-in; animation: flicker 2s infinite; }
+        .fade-in { opacity: 1 !important; }
+        @keyframes flicker { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+        
+        .section { background-color: var(--card-bg); border: 1px solid #333; padding: 20px; margin-bottom: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-special { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+        .stat-box input { width: 100%; text-align: center; font-size: 1.2rem; background: #333; color: var(--accent-color); border: 1px solid #555; }
+        .gm-tools { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px dashed #444; padding-bottom: 5px; }
+        .override-box { font-size: 0.8rem; display: flex; align-items: center; gap: 5px; color: #aaa; }
+        .override-input { width: 60px !important; background: #222 !important; color: #fff !important; border: 1px solid #555; display: none; }
+        .skill-input-row { display: flex; align-items: center; justify-content: space-between; background: #252525; padding: 8px 12px; border-radius: 4px; border: 1px solid #333; margin-bottom: 5px; }
+        .skill-input-row label { flex-grow: 1; margin: 0 10px; cursor: pointer; color: #e0e0e0; font-size: 1rem; }
+        .skill-input-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-color); }
+        .skill-rank-input { width: 60px !important; text-align: center; font-weight: bold; font-size: 1.1rem; background: #111 !important; border: 1px solid #555 !important; color: var(--accent-color) !important; padding: 5px 0; border-radius: 4px; }
+        label { display: block; margin-bottom: 5px; color: #aaa; }
+        select, input[type="text"], input[type="number"], textarea { width: 100%; background: #333; color: #fff; border: 1px solid #555; padding: 5px; font-family: inherit; }
+        textarea[readonly] { color: #aaa; font-style: italic; border: 1px dashed #555; }
+        .req-met { border-color: var(--accent-color) !important; color: #fff !important; }
+        .req-fail { border-color: var(--danger-color) !important; color: #ffcccc !important; }
+        .origin-info-box { background: #222; padding: 15px; border: 1px solid #444; border-radius: 4px; margin-top: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .origin-header { color: #e59400; font-size: 1.4rem; font-weight: bold; margin-bottom: 2px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .origin-source { color: #888; font-style: italic; font-size: 0.9rem; margin-bottom: 15px; }
+        .origin-desc { color: #ddd; margin-bottom: 15px; line-height: 1.4; }
+        .origin-section-title { color: #fff; font-weight: bold; text-transform: uppercase; margin-top: 10px; margin-bottom: 5px; }
+        .origin-trait-text { color: #bbb; margin-bottom: 10px; padding-left: 10px; border-left: 2px solid var(--accent-color); }
+        .origin-list { margin: 0; padding-left: 20px; color: #bbb; }
+        .origin-list li { margin-bottom: 2px; }
+        .added-perk-item { background: #222; border: 1px solid #444; padding: 5px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        #sheetView { max-width: 1000px; margin: 0 auto; padding: 20px; display: none; transition: all 0.3s ease; }
+        
+        /* WEAPON TABLE STYLES */
+        .weapon-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.85rem; }
+        .weapon-table th { text-align: left; border-bottom: 2px solid #555; padding: 5px; vertical-align: bottom;}
+        .weapon-table td { border-bottom: 1px solid #333; padding: 6px 4px; vertical-align: middle; }
+        .weapon-table .ammo-input { width: 40px !important; text-align: center; background: transparent; border: 1px solid #444; color: inherit; display: inline-block; padding: 2px; }
+        
+        /* THEMES */
+        .theme-paper { background: #f0f0e0; color: #333; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .theme-paper .sheet-logo { color: #000; font-size: 2.5rem; font-weight: 900; }
+        .theme-paper .cog { display: flex; background: #ccc; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+        .theme-paper .pip-bracket { display: none; }
+        .theme-paper .skills-table th, .theme-paper .weapon-table th { background: #e59400; color: white; }
+        .theme-paper .skills-table td, .theme-paper .weapon-table td { border-bottom: 1px dotted #ccc; }
+        .theme-paper .hex-stat { background: #333; color: white; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%); }
+        .theme-paper .part-header { background: #000; color: white; }
+        .theme-paper .perk-item { border-bottom: 1px solid #ccc; padding: 5px 0; display:flex; justify-content:space-between; }
+        .theme-paper .weapon-table .ammo-input { border: 1px solid #ccc; color: black; }
+
+        .theme-pipboy { background-color: #000000; color: var(--pip-green); font-family: 'Consolas', monospace; border: 2px solid var(--pip-green); text-shadow: 0 0 4px rgba(16, 185, 129, 0.6); position: relative; }
+        .theme-pipboy::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 2px, 3px 100%; pointer-events: none; z-index: 10; }
+        .theme-pipboy .sheet-logo { font-size: 2rem; border-bottom: 2px solid var(--pip-green); margin-bottom: 10px; letter-spacing: 5px; }
+        .theme-pipboy .cog { background: transparent !important; color: var(--pip-green); font-size: 1.5rem; clip-path: none !important; width: auto; height: auto; }
+        .theme-pipboy .pip-bracket { display: inline; font-size: 1.5rem; font-weight: bold; }
+        .theme-pipboy .skills-table th, .theme-pipboy .weapon-table th { border-bottom: 2px solid var(--pip-green); text-align: left; }
+        .theme-pipboy .hex-stat { background: transparent; border: 1px solid var(--pip-green); color: var(--pip-green); clip-path: none; border-radius: 4px; }
+        .theme-pipboy .part-box { border: 1px solid var(--pip-green); background: transparent; }
+        .theme-pipboy .part-header { background: var(--pip-green); color: black; font-weight: bold; }
+        .theme-pipboy h3 { background: transparent !important; color: var(--pip-green) !important; border-bottom: 1px solid var(--pip-green); }
+        .theme-pipboy .perk-item { border-bottom: 1px dashed var(--pip-dim); padding: 5px 0; display:flex; justify-content:space-between; }
+        .theme-pipboy .weapon-table .ammo-input { border: 1px solid var(--pip-dim); color: var(--pip-green); }
+
+        .sheet-header { display: grid; grid-template-columns: 200px 1fr 200px; gap: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
+        .theme-pipboy .sheet-header { border-bottom-color: var(--pip-green); }
+        .special-row { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .cog-container { width: 100px; text-align: center; }
+        .cog { width: 80px; height: 80px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; }
+        .sheet-body { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .skills-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .combat-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        .hex-stat { flex: 1; padding: 5px; text-align: center; }
+        .hex-val { font-size: 1.2rem; font-weight: bold; margin-top:5px; background:white; color:black; width:40px; height:40px; line-height:40px; margin:5px auto; border-radius:50%; }
+        .theme-pipboy .hex-val { background: transparent; color: var(--pip-green); border:none; width:auto; height:auto; border-radius:0; }
+        .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .part-box { padding: 5px; font-size: 0.9rem; }
+        .part-header { padding: 2px; text-align: center; margin: -5px -5px 5px -5px; }
+        #managementControls { background: #111; padding: 15px; margin-bottom: 20px; border: 1px solid var(--accent-color); display: none; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .container > header, #builderView, #managementControls, .btn-group { display: none !important; }
+            #sheetView { display: block !important; width: 100%; max-width: 100%; margin: 0; box-shadow: none; }
+            .theme-pipboy { background-color: #000 !important; color: #10b981 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; transform: scale(0.95); transform-origin: top left; width: 105%; }
+            .theme-paper { background-color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .delete-btn { display: none !important; }
+            .ammo-input { border: none !important; text-align: left !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- STATIC OVERLAY -->
+<div id="staticOverlay"></div>
+
+<!-- TERMINAL OVERLAY -->
+<div id="terminalOverlay">
+    <div id="terminalContent"></div>
+    <div id="successMessageContainer">
+        <img id="finalGif" src="" alt="Vault Boy" />
+        <div id="finalText" class="success-text">Welcome to the Wasteland.<br>Good luck.</div>
+    </div>
+</div>
+
+<div class="container">
+    <div id="builderView">
+        <header style="text-align: center; border-bottom: 2px solid var(--accent-color); margin-bottom:20px;">
+            <div class="mascot-container" id="headerMascot"></div>
+            <h1 style="color: var(--accent-color);">Fallout Character Creator</h1>
+        </header>
+
+        <div class="section">
+            <h2>1. Basics</h2>
+            <div class="grid-2">
+                <div><label>Name</label><input type="text" id="charName"></div>
+                <div>
+                    <label>Origin</label>
+                    <select id="origin" onchange="applyOriginRules()"></select>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <label for="startLevel">Starting Level</label>
+                <input type="number" id="startLevel" value="1" min="1" max="20" style="width: 80px; text-align: center;" onchange="recalculateGlobals()">
+                <span style="font-size:0.8rem; color:#aaa; margin-left:10px;">Higher levels grant extra Perks and Skill Ranks automatically.</span>
+            </div>
+
+            <div id="traitSelector" class="hidden" style="margin-top:15px; border-top:1px dashed #444; padding-top:10px;">
+                <label style="color:var(--accent-color);">Select Traits (Pick 2, or 1 + 'None' to take a Perk later)</label>
+                <div class="grid-2">
+                    <select id="trait1" onchange="recalculateGlobals()"></select>
+                    <select id="trait2" onchange="recalculateGlobals()"></select>
+                </div>
+            </div>
+            <div class="origin-info-box" id="originInfoBox"></div>
+        </div>
+
+        <div class="section">
+            <div class="gm-tools">
+                <h2>2. S.P.E.C.I.A.L. (Remaining: <span id="specialPoints">5</span>)</h2>
+                <div class="override-box">
+                    <input type="checkbox" id="specialOverrideCheck" onchange="toggleSpecialOverride()"> <label for="specialOverrideCheck" style="display:inline; margin:0; cursor:pointer;">Override Limit</label>
+                    <input type="number" id="specialOverrideVal" class="override-input" value="5" onchange="recalculateGlobals()">
+                </div>
+            </div>
+            <div class="grid-special">
+                <div><label>STR</label><input type="number" id="str" value="5" min="4" max="10" onchange="recalculateGlobals()"></div>
+                <div><label>PER</label><input type="number" id="per" value="5" min="4" max="10" onchange="recalculateGlobals()"></div>
+                <div><label>END</label><input type="number" id="end" value="5" min="4" max="10" onchange="recalculateGlobals()"></div>
+                <div><label>CHA</label><input type="number" id="cha" value="5" min="4" max="10" onchange="recalculateGlobals()"></div>
+                <div><label>INT</label><input type="number" id="int" value="5" min="4" max="10" onchange="recalculateGlobals()"></div>
+                <div><label>AGI</label><input type="number" id="agi" value="5" min="4" max="10" onchange="recalculateGlobals()"></div>
+                <div><label>LCK</label><input type="number" id="lck" value="5" min="4" max="10" onchange="recalculateGlobals()"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="gm-tools">
+                <h2>3. Skills & Tags (Tags: <span id="tagCount">3</span>)</h2>
+                <div class="override-box">
+                    <input type="checkbox" id="skillOverrideCheck" onchange="toggleSkillOverride()"> <label for="skillOverrideCheck" style="display:inline; margin:0; cursor:pointer;">Override Points</label>
+                    <input type="number" id="skillOverrideVal" class="override-input" value="15" onchange="recalculateGlobals()">
+                </div>
+            </div>
+            <div style="font-size:0.9rem; margin-bottom:10px;">
+                Skill Points Spent: <span id="skillPointsSpent">0</span> / <span id="skillPointsMax">?</span>
+            </div>
+            <div id="skillsContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;"></div>
+        </div>
+
+        <div class="section">
+            <div class="gm-tools">
+                <h2>4. Perks (Selected: <span id="perksSelectedCount">0</span> / <span id="perksMaxCount">1</span>)</h2>
+            </div>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <select id="perkSelect" style="flex-grow:1;"></select>
+                <button id="addPerkBtn" onclick="addBuilderPerk()">Add Perk</button>
+            </div>
+            <textarea id="perkDesc" rows="4" readonly placeholder="Select a perk to see details and check requirements..."></textarea>
+            
+            <div id="builderPerksList" style="margin-top:10px; border-top:1px solid #333; padding-top:10px;"></div>
+        </div>
+
+        <div class="section">
+            <h2>5. Equipment & Weapons</h2>
+            <div style="margin-bottom:20px;">
+                <label>Starting Gear (Armor, Chems, etc.)</label>
+                <textarea id="equipment" rows="3" placeholder="Enter non-weapon gear here..."></textarea>
+            </div>
+            
+            <!-- WEAPON BUILDER -->
+            <div style="border:1px solid #333; padding:10px; background:#1a1a1a;">
+                <label style="color:var(--accent-color); font-weight:bold; font-size:1.1em;">Weapon Selection</label>
+                <div style="color:#888; font-size:0.8rem; margin-bottom:10px;">Select a weapon to auto-fill stats, or type your own custom stats. You can add duplicate weapons.</div>
+                
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <select id="builderWeaponPreset" onchange="fillWeaponPreset('builder')" style="flex:1;">
+                        <option value="">-- Select Template --</option>
+                    </select>
+                    <button onclick="clearWeaponInputs('builder')" class="secondary" style="width:auto;">Clear</button>
+                </div>
+
+                <div class="grid-2" style="margin-bottom:10px;">
+                    <div><label>Weapon Name</label><input type="text" id="builderWepName" placeholder="e.g. 10mm Pistol"></div>
+                    <div>
+                        <label>Damage (Combat Dice)</label>
+                        <input type="number" id="builderWepDmg" placeholder="e.g. 4">
+                        <div style="font-size:0.7em; color:#666; margin-top:2px;">CD = 1, 2, 0, 0, 1+Eff, 1+Eff</div>
+                    </div>
+                </div>
+                
+                <div class="grid-2" style="margin-bottom:10px;">
+                    <div><label>Effects (On 5,6)</label><input type="text" id="builderWepEff" placeholder="e.g. Vicious"></div>
+                    <div><label>Qualities (Passive)</label><input type="text" id="builderWepQual" placeholder="e.g. Close Quarters"></div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <div style="flex:1"><label>Type</label><input type="text" id="builderWepType" placeholder="Phys"></div>
+                    <div style="width:60px;"><label>Rate</label><input type="number" id="builderWepRate" value="1"></div>
+                    <div style="width:80px;"><label>Range</label><input type="text" id="builderWepRange" placeholder="C"></div>
+                </div>
+
+                <button onclick="addWeaponFromBuilder()" style="width:100%;">Add Weapon to Loadout</button>
+            </div>
+            
+            <div id="builderWeaponsListContainer" style="margin-top:10px;"></div>
+        </div>
+
+        <button onclick="finalizeCharacter()" style="width:100%; font-size: 1.2rem;">CREATE CHARACTER</button>
+        <hr style="border-color:#333; margin: 20px 0;">
+        <h3 style="color:#aaa;">Restore Backup</h3>
+        <input type="file" id="loadFile" onchange="loadCharacterFile()" style="background:#333; color:white;">
+    </div>
+
+    <!-- MANAGEMENT CONTROLS -->
+    <div id="managementControls">
+        <h2 style="color: var(--accent-color); margin-top:0;">Character Management</h2>
+        
+        <div style="display:flex; gap: 20px; align-items: center; margin-bottom: 15px;">
+            <div><label>Current XP</label><input type="number" id="manageXP" style="width: 100px;"></div>
+            <button onclick="addXP()">Add XP</button>
+            <button class="secondary" onclick="levelUp()">Force Level Up</button>
+        </div>
+
+        <div class="grid-2">
+            <div>
+                <label>Add New Perk</label>
+                <select id="managePerkSelect"></select>
+                <textarea id="managePerkDesc" rows="4" readonly placeholder="Select a perk to see details and check requirements..."></textarea>
+                <button onclick="addPerkFromManager()" style="margin-top:5px; width:100%;">Learn Perk</button>
+            </div>
+            <div>
+                <label>Increase Skill Rank</label>
+                <select id="manageSkillSelect"></select>
+                <button onclick="increaseSkillRank()" style="margin-top:5px; width:100%;">+1 Rank</button>
+            </div>
+        </div>
+
+        <hr style="border-color: #333; margin: 15px 0;">
+
+        <!-- WEAPON FABRICATOR (MANAGER) -->
+        <div style="margin-bottom: 15px; border:1px solid #333; padding:10px; background:#1a1a1a;">
+            <label style="color:var(--accent-color); font-weight:bold; font-size:1.1em;">Add New Weapon</label>
+            
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <select id="managerWeaponPreset" onchange="fillWeaponPreset('manager')" style="flex:1;">
+                    <option value="">-- Select Template --</option>
+                </select>
+                <button onclick="clearWeaponInputs('manager')" class="secondary" style="width:auto;">Clear</button>
+            </div>
+
+            <div class="grid-2" style="margin-bottom:10px;">
+                <div><label>Weapon Name</label><input type="text" id="managerWepName" placeholder="e.g. Looted Pistol"></div>
+                <div><label>Damage (Combat Dice)</label><input type="number" id="managerWepDmg" placeholder="e.g. 4"></div>
+            </div>
+            
+            <div class="grid-2" style="margin-bottom:10px;">
+                <div><label>Effects</label><input type="text" id="managerWepEff" placeholder="e.g. Vicious"></div>
+                <div><label>Qualities</label><input type="text" id="managerWepQual" placeholder="e.g. Reliable"></div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <div style="flex:1"><label>Type</label><input type="text" id="managerWepType" placeholder="Phys"></div>
+                <div style="width:60px;"><label>Rate</label><input type="number" id="managerWepRate" value="1"></div>
+                <div style="width:80px;"><label>Range</label><input type="text" id="managerWepRange" placeholder="C"></div>
+            </div>
+
+            <button onclick="addWeaponFromManager()" style="width:100%;">Add to Inventory</button>
+        </div>
+
+        <!-- INVENTORY MANAGEMENT -->
+        <div style="margin-bottom: 15px;">
+            <label>General Inventory & Caps</label>
+            <textarea id="manageEquipment" rows="6" placeholder="List items, caps, armor..."></textarea>
+            <button onclick="updateInventory()" style="margin-top:5px; width:100%;">Update Inventory</button>
+        </div>
+
+        <div class="btn-group">
+            <button class="pip-btn" onclick="toggleTheme()">Toggle View: Paper / Pip-Boy</button>
+            <button onclick="printSheet()">Save as PDF / Print</button>
+            <button onclick="saveCharacterText()">Save Text File (.txt)</button>
+            <button class="secondary" onclick="saveCharacterJSON()">Export Save Data (.json)</button>
+        </div>
+    </div>
+
+    <!-- SHEET VIEW -->
+    <div id="sheetView" class="theme-pipboy">
+        <div class="sheet-header">
+            <div class="sheet-logo">FALLOUT<br><span style="font-size:1rem; letter-spacing: 2px;">RPG</span></div>
+            <div class="sheet-info-box">
+                <div><span style="font-size:0.7rem; color:#888;">NAME</span> <span id="sheetName" style="font-size: 1.2rem; font-weight:bold;"></span></div>
+                <div><span style="font-size:0.7rem; color:#888;">ORIGIN</span> <span id="sheetOrigin" style="font-weight:bold;"></span></div>
+            </div>
+            <div class="sheet-xp-box">
+                <div>LEVEL: <span id="sheetLevel" style="font-size:1.5rem; font-weight:bold;">1</span></div>
+                <div>XP: <span id="sheetXP">0</span></div>
+            </div>
+        </div>
+
+        <div class="special-row">
+            <div class="cog-container"><div class="cog-label">Strength</div><div class="cog"><span class="pip-bracket">[ </span><span id="sheetStr">5</span><span class="pip-bracket"> ]</span></div></div>
+            <div class="cog-container"><div class="cog-label">Perception</div><div class="cog"><span class="pip-bracket">[ </span><span id="sheetPer">5</span><span class="pip-bracket"> ]</span></div></div>
+            <div class="cog-container"><div class="cog-label">Endurance</div><div class="cog"><span class="pip-bracket">[ </span><span id="sheetEnd">5</span><span class="pip-bracket"> ]</span></div></div>
+            <div class="cog-container"><div class="cog-label">Charisma</div><div class="cog"><span class="pip-bracket">[ </span><span id="sheetCha">5</span><span class="pip-bracket"> ]</span></div></div>
+            <div class="cog-container"><div class="cog-label">Intelligence</div><div class="cog"><span class="pip-bracket">[ </span><span id="sheetInt">5</span><span class="pip-bracket"> ]</span></div></div>
+            <div class="cog-container"><div class="cog-label">Agility</div><div class="cog"><span class="pip-bracket">[ </span><span id="sheetAgi">5</span><span class="pip-bracket"> ]</span></div></div>
+            <div class="cog-container"><div class="cog-label">Luck</div><div class="cog"><span class="pip-bracket">[ </span><span id="sheetLck">5</span><span class="pip-bracket"> ]</span></div></div>
+        </div>
+
+        <div class="sheet-body">
+            <div>
+                <h3>SKILLS</h3>
+                <table class="skills-table">
+                    <thead><tr><th>TAG</th><th>NAME</th><th>RANK</th></tr></thead>
+                    <tbody id="sheetSkillsBody"></tbody>
+                </table>
+            </div>
+            <div>
+                <div class="combat-row">
+                    <div class="hex-stat">INITIATIVE<div class="hex-val" id="sheetInit">0</div></div>
+                    <div class="hex-stat">DEFENSE<div class="hex-val" id="sheetDef">1</div></div>
+                    <div class="hex-stat">MELEE DMG<div class="hex-val" id="sheetMelee">+0</div></div>
+                    <div class="hex-stat">CARRY LBS<div class="hex-val" id="sheetCarry">150</div></div>
+                </div>
+                <div class="health-grid">
+                    <div class="part-box">
+                        <div class="part-header">HEALTH</div>
+                        <div style="padding:10px;">
+                            <div>Max HP: <span id="sheetMaxHP" style="font-weight:bold; font-size:1.2rem;"></span></div>
+                            <div style="margin-top:5px;">Current: _________</div>
+                            <div style="margin-top:5px;">Rads: _________</div>
+                        </div>
+                    </div>
+                    <div class="part-box">
+                        <div class="part-header">RESISTANCES</div>
+                        <div style="padding:10px;">
+                            <div>Phys: <span id="sheetPhysDR">0</span></div>
+                            <div>Energy: <span id="sheetEnDR">0</span></div>
+                            <div>Rad: <span id="sheetRadDR">0</span></div>
+                            <div>Poison: <span id="sheetPoisDR">0</span></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3>WEAPONS</h3>
+                <table class="weapon-table">
+                    <thead>
+                        <tr>
+                            <th width="25%">WEAPON</th>
+                            <th width="8%">DMG</th>
+                            <th width="22%">EFFECTS</th>
+                            <th width="25%">QUALITIES</th>
+                            <th width="20%">AMMO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sheetWeaponsBody">
+                        <!-- Weapons injected here -->
+                    </tbody>
+                </table>
+
+                <h3>PERKS & TRAITS</h3>
+                <div class="perks-list" id="sheetPerksList"></div>
+                <h3>EQUIPMENT</h3>
+                <div class="perks-list" id="sheetEquipment"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // -----------------------------------------------------------
+    // CONFIGURATION
+    // -----------------------------------------------------------
+    const BOOT_START_MP3 = ""; 
+    const TEXT_LOOP_MP3 = "";
+    const SUCCESS_SFX_MP3 = "";
+    const VAULT_BOY_GIF = "";
+    
+    // MASCOT SVG (Thumbs Up)
+    const mascotSVG = `<svg class="mascot-icon" viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-1.91l-.01-.01L23 10z"/></svg>`;
+
+    // -----------------------------------------------------------
+    
+    const skillsList = ["Athletics","Barter","Big Guns","Energy Weapons","Explosives","Lockpick","Medicine","Melee Weapons","Pilot","Repair","Science","Small Guns","Sneak","Speech","Survival","Throwing","Unarmed"];
+    const skillAttrs = { "Athletics":"STR", "Barter":"CHA", "Big Guns":"END", "Energy Weapons":"PER", "Explosives":"PER", "Lockpick":"PER", "Medicine":"INT", "Melee Weapons":"STR", "Pilot":"PER", "Repair":"INT", "Science":"INT", "Small Guns":"AGI", "Sneak":"AGI", "Speech":"CHA", "Survival":"END", "Throwing":"AGI", "Unarmed":"STR" };
+    
+    // FULL WEAPON DATABASE
+    const commonWeapons = [
+        // Small Guns
+        { name: ".44 Pistol", dmg: 6, eff: "Vicious", type: "Phys", rate: 1, range: "C", qual: "Close Quarters" },
+        { name: "10mm Pistol", dmg: 4, eff: "-", type: "Phys", rate: 2, range: "C", qual: "Close Quarters, Reliable" },
+        { name: "Flare Gun", dmg: 3, eff: "-", type: "Phys", rate: 0, range: "M", qual: "Reliable" },
+        { name: "Assault Rifle", dmg: 5, eff: "Burst", type: "Phys", rate: 2, range: "M", qual: "Two-Handed" },
+        { name: "Combat Rifle", dmg: 5, eff: "-", type: "Phys", rate: 2, range: "M", qual: "Two-Handed" },
+        { name: "Gauss Rifle", dmg: 10, eff: "Piercing 1", type: "Phys", rate: 1, range: "L", qual: "Two-Handed" },
+        { name: "Hunting Rifle", dmg: 6, eff: "Piercing 1", type: "Phys", rate: 0, range: "L", qual: "Two-Handed" },
+        { name: "Submachine Gun", dmg: 3, eff: "Burst", type: "Phys", rate: 3, range: "C", qual: "Two-Handed, Inaccurate" },
+        { name: "Combat Shotgun", dmg: 5, eff: "Spread", type: "Phys", rate: 2, range: "C", qual: "Two-Handed, Inaccurate" },
+        { name: "Double-Barrel Shotgun", dmg: 5, eff: "Spread, Vicious", type: "Phys", rate: 0, range: "C", qual: "Two-Handed, Inaccurate" },
+        { name: "Pipe Bolt-Action", dmg: 5, eff: "Piercing 1", type: "Phys", rate: 0, range: "C", qual: "Unreliable" },
+        { name: "Pipe Gun", dmg: 3, eff: "-", type: "Phys", rate: 2, range: "C", qual: "Close Quarters, Unreliable" },
+        { name: "Pipe Revolver", dmg: 4, eff: "-", type: "Phys", rate: 1, range: "C", qual: "Close Quarters, Unreliable" },
+        { name: "Railway Rifle", dmg: 10, eff: "Breaking", type: "Phys", rate: 0, range: "M", qual: "Two-Handed, Debilitating, Unreliable" },
+        { name: "Syringer", dmg: 3, eff: "Breaking", type: "Phys", rate: 0, range: "M", qual: "Two-Handed, Unreliable" },
+        { name: "M79 Grenade Launcher", dmg: 6, eff: "-", type: "Phys", rate: 0, range: "L", qual: "Blast, Inacc, Slow Load, 2H" },
+        { name: ".357 Magnum", dmg: 5, eff: "Vicious", type: "Phys", rate: 1, range: "C", qual: "Close Quarters, Reliable" },
+        { name: "12.7mm Pistol", dmg: 6, eff: "-", type: "Phys", rate: 1, range: "C", qual: "Close Quarters, Recoil (7)" },
+        { name: "12.7mm SMG", dmg: 5, eff: "Burst", type: "Phys", rate: 3, range: "C", qual: "2H, Inacc, Recoil (7)" },
+        { name: "25mm Grenade APW", dmg: 4, eff: "-", type: "Phys", rate: 1, range: "L", qual: "Blast, Two-Handed" },
+        { name: "9mm Pistol", dmg: 3, eff: "-", type: "Phys", rate: 2, range: "C", qual: "Close Quarters, Concealed, Reliable" },
+        { name: "Anti-Material Rifle", dmg: 8, eff: "Vicious", type: "Phys", rate: 0, range: "L", qual: "2H, Reliable, Recoil (8)" },
+        { name: "Battle Rifle", dmg: 7, eff: "Piercing 1", type: "Phys", rate: 1, range: "M", qual: "2H, Reliable" },
+        { name: "Black Powder Blunderbuss", dmg: 7, eff: "Vicious", type: "Phys", rate: 0, range: "C", qual: "CQ, Inacc, Recoil (7), Slow Load" },
+        { name: "Black Powder Pistol", dmg: 7, eff: "Vicious", type: "Phys", rate: 0, range: "C", qual: "Recoil (7), Slow Load" },
+        { name: "Black Powder Rifle", dmg: 8, eff: "Vicious", type: "Phys", rate: 0, range: "M", qual: "Recoil (7), Slow Load" },
+        { name: "Gauss Pistol", dmg: 8, eff: "Piercing 1", type: "Phys", rate: 1, range: "M", qual: "-" },
+        { name: "Gauss Shotgun", dmg: 7, eff: "Piercing 1, Spread", type: "Phys", rate: 0, range: "C", qual: "2H, Ammo-Hungry (10)" },
+        { name: "Lever-Action Rifle", dmg: 7, eff: "Piercing 1", type: "Phys", rate: 0, range: "M", qual: "-" },
+        { name: "Light Machine Gun", dmg: 5, eff: "Burst", type: "Phys", rate: 4, range: "M", qual: "2H, Inacc, Recoil (8)" },
+        { name: "Pump-Action Shotgun", dmg: 5, eff: "Spread", type: "Phys", rate: 1, range: "C", qual: "2H, Inaccurate" },
+        { name: "Radium Rifle", dmg: 4, eff: "Radioactive", type: "Phys", rate: 3, range: "M", qual: "Two-Handed" },
+        { name: "Sniper Rifle", dmg: 7, eff: "Piercing 1", type: "Phys", rate: 0, range: "L", qual: "2H, Accurate" },
+        
+        // Energy Weapons
+        { name: "Institute Laser", dmg: 3, eff: "Burst", type: "Energy", rate: 3, range: "C", qual: "Close Quarters, Inaccurate" },
+        { name: "Laser Musket", dmg: 5, eff: "Piercing 1", type: "Energy", rate: 0, range: "M", qual: "Two-Handed" },
+        { name: "Laser Gun", dmg: 4, eff: "Piercing 1", type: "Energy", rate: 2, range: "C", qual: "Close Quarters" },
+        { name: "Plasma Gun", dmg: 6, eff: "-", type: "Phys/Ener", rate: 1, range: "C", qual: "Close Quarters" },
+        { name: "Gamma Gun", dmg: 3, eff: "Piercing 1, Stun", type: "Rad", rate: 1, range: "M", qual: "Blast, Inaccurate" },
+        { name: "Acid Soaker", dmg: 3, eff: "Persistent", type: "Poison", rate: 2, range: "C", qual: "Breaking, Debilitating, Inacc" },
+        { name: "Alien Blaster", dmg: 5, eff: "Vicious", type: "Ener/Rad", rate: 2, range: "C", qual: "CQ, Inaccurate" },
+        { name: "Assaultron Head", dmg: 5, eff: "Piercing 1", type: "Energy", rate: 0, range: "C", qual: "Radioactive" },
+        { name: "Cryojet", dmg: 3, eff: "Burst, Freeze", type: "Energy", rate: 3, range: "C", qual: "Inaccurate" },
+        { name: "Mesmetron", dmg: 3, eff: "Stun", type: "Energy", rate: 1, range: "M", qual: "-" },
+        { name: "Tesla Rifle", dmg: 4, eff: "Arc", type: "Energy", rate: 2, range: "M", qual: "Two-Handed" },
+        { name: "Alien Atomizer", dmg: 6, eff: "Vicious", type: "Energy", rate: 3, range: "C", qual: "CQ, Reliable" },
+        { name: "Alien Disintegrator", dmg: 8, eff: "Vicious", type: "Energy", rate: 2, range: "M", qual: "2H, Reliable" },
+        { name: "Arc Welder", dmg: 3, eff: "Stun", type: "Energy", rate: 4, range: "C", qual: "2H, Surge" },
+        { name: "Microwave Emitter", dmg: 6, eff: "Persistent, Piercing 3", type: "Energy", rate: 1, range: "M", qual: "Two-Handed" },
+
+        // Big Guns
+        { name: "Fat Man", dmg: 21, eff: "Breaking, Radioactive, Vicious", type: "Phys", rate: 0, range: "M", qual: "Blast, Inacc, 2H" },
+        { name: "Flamer", dmg: 3, eff: "Burst, Persistent, Spread", type: "Energy", rate: 4, range: "C", qual: "Debilitating, 2H" },
+        { name: "Gatling Laser", dmg: 3, eff: "Burst, Piercing 1", type: "Energy", rate: 6, range: "M", qual: "Gatling, Inacc, 2H" },
+        { name: "Heavy Incinerator", dmg: 5, eff: "Burst, Persistent, Spread", type: "Energy", rate: 3, range: "M", qual: "Debilitating, 2H" },
+        { name: "Junk Jet", dmg: 6, eff: "-", type: "Phys", rate: 1, range: "M", qual: "Two-Handed" },
+        { name: "Minigun", dmg: 3, eff: "Burst, Spread", type: "Phys", rate: 5, range: "M", qual: "Gatling, Inacc, 2H" },
+        { name: "Missile Launcher", dmg: 11, eff: "-", type: "Phys", rate: 0, range: "L", qual: "Blast, 2H" },
+        { name: "Broadsider", dmg: 10, eff: "Breaking", type: "Phys", rate: 0, range: "M", qual: "Blast, 2H" },
+        { name: "Cryolator", dmg: 4, eff: "Burst, Freeze, Spread", type: "Energy", rate: 4, range: "C", qual: "Inacc, 2H" },
+        { name: "Harpoon Gun", dmg: 12, eff: "Piercing 1", type: "Phys", rate: 0, range: "M", qual: "Debilitating, Inacc, 2H" },
+        { name: ".50 Cal Machine Gun", dmg: 7, eff: "Burst", type: "Phys", rate: 3, range: "M", qual: "2H, Recoil (9)" },
+        { name: "Auto Grenade Launcher", dmg: 6, eff: "Breaking", type: "Phys", rate: 2, range: "L", qual: "Bombard, Inacc" },
+        { name: "Drone Cannon", dmg: 8, eff: "Breaking", type: "Energy", rate: 0, range: "M", qual: "Ammo-Hungry, Blast, Inacc, Slow Load" },
+        { name: "Gatling Gun", dmg: 3, eff: "Burst, Spread", type: "Phys", rate: 3, range: "M", qual: "Gatling, Inacc, Recoil (6), 2H" },
+        { name: "Gatling Plasma", dmg: 4, eff: "Burst", type: "Phys/Ener", rate: 4, range: "M", qual: "Gatling, Inacc, 2H" },
+        { name: "Gauss Minigun", dmg: 6, eff: "Burst, Piercing 1", type: "Phys", rate: 3, range: "L", qual: "Gatling, 2H" },
+        { name: "Plasma Caster", dmg: 8, eff: "Burst", type: "Phys/Ener", rate: 3, range: "M", qual: "Inacc, Recoil (8), 2H" },
+        { name: "Tesla Cannon", dmg: 8, eff: "Arc, Piercing 2", type: "Energy", rate: 0, range: "L", qual: "Accurate, Ammo-Hungry (5), Surge, 2H" },
+
+        // Unarmed / Melee
+        { name: "Unarmed Strike", dmg: 2, eff: "-", type: "Phys", rate: "-", range: "-", qual: "-" },
+        { name: "Handy Rock", dmg: 2, eff: "Vicious", type: "Phys", rate: "-", range: "C", qual: "Thrown (C)" },
+        { name: "Sword", dmg: 4, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "Parry" },
+        { name: "Combat Knife", dmg: 3, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Machete", dmg: 3, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Ripper", dmg: 4, eff: "Vicious", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Shishkebab", dmg: 5, eff: "Piercing 1", type: "Energy", rate: "-", range: "C", qual: "Parry" },
+        { name: "Switchblade", dmg: 2, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "Concealed" },
+        { name: "Baseball Bat", dmg: 4, eff: "-", type: "Phys", rate: "-", range: "C", qual: "Two-Handed" },
+        { name: "Sledgehammer", dmg: 5, eff: "-", type: "Phys", rate: "-", range: "C", qual: "Two-Handed" },
+        { name: "Super Sledge", dmg: 6, eff: "Breaking", type: "Phys", rate: "-", range: "C", qual: "Two-Handed" },
+        { name: "Tire Iron", dmg: 3, eff: "-", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Boxing Glove", dmg: 3, eff: "Stun", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Deathclaw Gauntlet", dmg: 5, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Knuckles", dmg: 3, eff: "-", type: "Phys", rate: "-", range: "C", qual: "Concealed" },
+        { name: "Power Fist", dmg: 4, eff: "Stun", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Assaultron Blade", dmg: 4, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Auto-Axe", dmg: 5, eff: "Vicious", type: "Phys", rate: "-", range: "C", qual: "2H" },
+        { name: "Ballistic Fist", dmg: 6, eff: "Vicious", type: "Phys", rate: "-", range: "C", qual: "Slow Load" },
+        { name: "Bumper Sword", dmg: 6, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "Recoil (7), 2H" },
+        { name: "Cattle Prod", dmg: 6, eff: "Stun", type: "Energy", rate: "-", range: "C", qual: "-" },
+        { name: "Chainsaw", dmg: 6, eff: "Vicious", type: "Phys", rate: "-", range: "C", qual: "2H" },
+        { name: "Death Tambo", dmg: 4, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Displacer Glove", dmg: 6, eff: "Piercing 1, Stun", type: "Phys", rate: "-", range: "C", qual: "-" },
+        { name: "Guitar Sword", dmg: 4, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "Parry" },
+        { name: "Mr Handy Buzz Blade", dmg: 4, eff: "Vicious", type: "Phys", rate: "-", range: "C", qual: "2H" },
+        { name: "Multi-Purpose Axe", dmg: 5, eff: "-", type: "Phys", rate: "-", range: "C", qual: "2H" },
+        { name: "Proton Axe", dmg: 5, eff: "Piercing 1", type: "Energy", rate: "-", range: "C", qual: "2H" },
+        { name: "War Drum", dmg: 5, eff: "Stun", type: "Phys", rate: "-", range: "C", qual: "2H" },
+
+        // Explosives / Bows
+        { name: "Throwing Knives", dmg: 3, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "Concealed, Thrown" },
+        { name: "Tomahawk", dmg: 4, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "Suppressed, Thrown" },
+        { name: "Javelin", dmg: 4, eff: "Piercing 1", type: "Phys", rate: "-", range: "C", qual: "Suppressed, Thrown" },
+        { name: "Frag Grenade", dmg: 5, eff: "-", type: "Phys", rate: "-", range: "M", qual: "Blast, Thrown" },
+        { name: "Molotov", dmg: 4, eff: "Persistent", type: "Phys", rate: "-", range: "M", qual: "Blast, Thrown" },
+        { name: "Nuka Grenade", dmg: 9, eff: "Breaker, Rad, Vicious", type: "Ener", rate: "-", range: "M", qual: "Blast, Thrown" },
+        { name: "Pulse Grenade", dmg: 6, eff: "Stun", type: "Energy", rate: "-", range: "M", qual: "Blast, Thrown" },
+        { name: "Plasma Grenade", dmg: 8, eff: "-", type: "Energy", rate: "-", range: "M", qual: "Blast, Thrown" },
+        { name: "Frag Mine", dmg: 6, eff: "-", type: "Phys", rate: "-", range: "-", qual: "Blast, Mine" },
+        { name: "Bottlecap Mine", dmg: 6, eff: "-", type: "Phys", rate: "-", range: "-", qual: "Blast, Mine" },
+        { name: "Pulse Mine", dmg: 6, eff: "Stun", type: "Energy", rate: "-", range: "-", qual: "Blast, Mine" },
+        { name: "Plasma Mine", dmg: 9, eff: "-", type: "Energy", rate: "-", range: "-", qual: "Blast, Mine" },
+        { name: "Nuke Mine", dmg: 9, eff: "Breaker, Rad, Vicious", type: "Ener", rate: "-", range: "-", qual: "Blast, Mine" },
+        { name: "Dynamite", dmg: 5, eff: "-", type: "Phys", rate: "-", range: "C", qual: "Blast, Thrown" },
+        { name: "Bow", dmg: 3, eff: "Piercing 1", type: "Phys", rate: 2, range: "M", qual: "Suppressed, Recoil (6), 2H" },
+        { name: "Crossbow", dmg: 5, eff: "Piercing 1", type: "Phys", rate: 0, range: "M", qual: "Suppressed, Slow Load, 2H" }
+    ];
+
+    const traitsData = {
+        "Survivor": ["Educated", "Fast Shot", "Gifted", "Heavy Handed", "Small Frame"],
+        "NCR": ["Good Natured", "Grunt", "Home on the Range", "Trigger Discipline", "Brahmin Baron"],
+        "Tribal": ["Mother Wasteland", "Nomad", "Rite of Passage", "Tools of the Old World", "The Chosen One"]
+    };
+
+    // COMPLETE PERK DATABASE (Condensed for brevity - same as before)
+    const perksData = [
+        { name: "Action Boy/Girl", req: "None", desc: "Spend AP to take an extra major action without difficulty increase.", source: "Core Rulebook p.59" },
+        { name: "Adamantium Skeleton", req: "END 7, Level 1+", desc: "Crit damage threshold increases by rank.", source: "Core Rulebook p.59" },
+        { name: "Adrenalin Rush", req: "STR 7", desc: "When health < max, STR counts as 10.", source: "Core Rulebook p.59" },
+        { name: "All Night Long", req: "Level 16, Not Robot", desc: "No hunger/thirst decay at night. Slower fatigue accumulation from starvation.", source: "Settler's Guide p.18" },
+        { name: "Ammosmith", req: "INT 7, Level 2+", desc: "Craft ammo up to rarity 1. Rank 2: Rarity 3, dismantle ammo. Rank 3: Rarity 5, bonus crafting rolls.", source: "Settler's Guide p.18" },
+        { name: "Animal Friend", req: "CHA 6, Level 1+", desc: "Mammals/Lizards/Insects may not attack you. Rank 2: Charm them.", source: "Core Rulebook p.59" },
+        { name: "Aquaboy/Aquagirl", req: "END 5, Level 1+", desc: "Waterbreathing, no rads from water.", source: "Core Rulebook p.60" },
+        { name: "Armorer", req: "STR 5, INT 6", desc: "Unlock armor mods.", source: "Core Rulebook p.60" },
+        { name: "Awareness", req: "PER 7", desc: "Aim at Close target = Piercing 1.", source: "Core Rulebook p.60" },
+        { name: "Barbarian", req: "STR 7", desc: "Phys DR increases with STR. No Power Armor.", source: "Core Rulebook p.60" },
+        { name: "Basher", req: "STR 6", desc: "Gun Bash = Vicious.", source: "Core Rulebook p.60" },
+        { name: "Better Criticals", req: "LCK 9", desc: "1 Luck to auto-crit.", source: "Core Rulebook p.60" },
+        { name: "Big Leagues", req: "STR 8", desc: "2H Melee = Vicious.", source: "Core Rulebook p.61" },
+        { name: "Black Widow/Lady Killer", req: "CHA 6", desc: "Bonus vs specific gender.", source: "Core Rulebook p.61" },
+        { name: "Blacksmith", req: "STR 6, Level 2+", desc: "Unlock melee mods.", source: "Core Rulebook p.61" },
+        { name: "Blitz", req: "AGI 9, Level 1+", desc: "Move+Melee re-roll.", source: "Core Rulebook p.61" },
+        { name: "Bloody Mess", req: "LCK 6", desc: "Crit bonus damage.", source: "Core Rulebook p.61" },
+        { name: "Bodyguards", req: "CHA 8, Level 5+", desc: "+1 DR/ER per ally near you.", source: "Settler's Guide p.19" },
+        { name: "Can Do!", req: "LCK 5", desc: "Extra food scavenging.", source: "Core Rulebook p.61" },
+        { name: "Cap Collector", req: "CHA 5", desc: "Better buying/selling prices.", source: "Core Rulebook p.61" },
+        { name: "Cautious Nature", req: "PER 7", desc: "Re-roll when buying d20s.", source: "Core Rulebook p.62" },
+        { name: "Center Mass", req: "AGI 7", desc: "Torso shots easier.", source: "Core Rulebook p.62" },
+        { name: "Chem Resistant", req: "END 7, Level 1+", desc: "Addiction resistance.", source: "Core Rulebook p.62" },
+        { name: "Chemist", req: "INT 7", desc: "Chems last longer.", source: "Core Rulebook p.62" },
+        { name: "Class Freak / Mechanical Menace", req: "CHA 6, INT 5", desc: "Defense bonus vs Mutants/Robots.", source: "Settler's Guide p.21" },
+        { name: "Commando", req: "AGI 8, Level 2+", desc: "Auto weapon damage bonus.", source: "Core Rulebook p.62" },
+        { name: "Community Organizer", req: "CHA 5, END 5, Level 1+", desc: "Settlement bonuses.", source: "Settler's Guide p.19" },
+        { name: "Comprehension", req: "INT 6", desc: "Magazine bonuses better.", source: "Core Rulebook p.62" },
+        { name: "Concentrated Fire", req: "PER 8, AGI 6", desc: "Ammo spend bonus rerolls.", source: "Core Rulebook p.62" },
+        { name: "Contractor", req: "CHA 5, INT 5, Level 2+", desc: "Cheaper settlement building.", source: "Settler's Guide p.19" },
+        { name: "Covert Operator", req: "AGI 8", desc: "Ranged sneak attack bonus.", source: "Settler's Guide p.19" },
+        { name: "Daring Nature", req: "LCK 7", desc: "Re-roll when giving GM AP.", source: "Core Rulebook p.62" },
+        { name: "Demolition Expert", req: "PER 6, LCK 6", desc: "Explosive damage bonus.", source: "Core Rulebook p.63" },
+        { name: "Dodger", req: "AGI 6, Level 4", desc: "Defend action easier.", source: "Core Rulebook p.63" },
+        { name: "Dogmeat", req: "CHA 5", desc: "Get a dog.", source: "Core Rulebook p.63" },
+        { name: "Educated", req: "INT 6", desc: "Gain one extra Tag Skill.", source: "Core Rulebook p.56" },
+        { name: "Enforcer", req: "AGI 9, Level 12", desc: "Shotgun Debilitating effect.", source: "Settler's Guide p.19" },
+        { name: "Entomologist", req: "INT 7", desc: "Bonus vs Insects.", source: "Core Rulebook p.64" },
+        { name: "Fast Metabolism", req: "END 6, Level 1+", desc: "Better healing.", source: "Core Rulebook p.64" },
+        { name: "Faster Healing", req: "END 6", desc: "Healing tests easier.", source: "Core Rulebook p.64" },
+        { name: "Finesse", req: "AGI 9", desc: "Re-roll damage dice once/combat.", source: "Core Rulebook p.64" },
+        { name: "Fortune Finder", req: "LCK 5, Level 2+", desc: "Find more caps.", source: "Core Rulebook p.64" },
+        { name: "Ghost", req: "PER 5, AGI 6", desc: "Sneak bonus in dark.", source: "Core Rulebook p.64" },
+        { name: "Green Thumb", req: "PER 4, Level 4", desc: "Foraging bonus.", source: "Settler's Guide p.20" },
+        { name: "Grim Reaper's Sprint", req: "LCK 8", desc: "Kills give AP.", source: "Core Rulebook p.64" },
+        { name: "Gun Fu", req: "AGI 10, Level 1+", desc: "Hit multiple targets.", source: "Core Rulebook p.64" },
+        { name: "Gun Nut", req: "INT 6, Level 2+", desc: "Unlock Gun mods.", source: "Core Rulebook p.65" },
+        { name: "Gun Runner", req: "AGI 6, Level 4", desc: "Better sprint with pistols.", source: "Settler's Guide p.20" },
+        { name: "Gunslinger", req: "AGI 7, Level 2+", desc: "Pistol damage bonus.", source: "Core Rulebook p.65" },
+        { name: "Hacker", req: "INT 8", desc: "Hacking easier.", source: "Core Rulebook p.65" },
+        { name: "Happy Camper", req: "CHA 7, END 6, Level 3+", desc: "Campfire bonuses.", source: "Settler's Guide p.20" },
+        { name: "Healer", req: "INT 7, Level 1+", desc: "Heal extra HP.", source: "Core Rulebook p.65" },
+        { name: "Heave Ho!", req: "STR 8", desc: "Thrown range bonus.", source: "Core Rulebook p.65" },
+        { name: "Hired Help", req: "CHA 7", desc: "Get a companion.", source: "Settler's Guide p.20" },
+        { name: "Home Defense", req: "INT 6, Level 5+", desc: "Craft traps.", source: "Settler's Guide p.20" },
+        { name: "Homebody", req: "END 6, Level 5+", desc: "Heal in settlements.", source: "Settler's Guide p.21" },
+        { name: "Hunter", req: "END 6", desc: "Bonus vs Mutated Animals.", source: "Core Rulebook p.65" },
+        { name: "Infiltrator", req: "PER 8", desc: "Lockpick re-roll.", source: "Core Rulebook p.65" },
+        { name: "Inspirational", req: "CHA 8", desc: "More Group AP.", source: "Core Rulebook p.66" },
+        { name: "Intense Training", req: "Level 2+", desc: "+1 SPECIAL point.", source: "Core Rulebook p.66" },
+        { name: "Iron Fist", req: "STR 6, Level 1+", desc: "Unarmed damage bonus.", source: "Core Rulebook p.66" },
+        { name: "Junktown Jerky Vendor", req: "CHA 8", desc: "Barter easier.", source: "Core Rulebook p.66" },
+        { name: "Jury Rigging", req: "None", desc: "Repair without parts.", source: "Core Rulebook p.66" },
+        { name: "Laser Commander", req: "PER 8, Level 2+", desc: "Laser damage bonus.", source: "Core Rulebook p.66" },
+        { name: "Lead Belly", req: "END 6, Level 1+", desc: "Resist food rads.", source: "Core Rulebook p.66" },
+        { name: "Life Giver", req: "Level 5+", desc: "Increase Max HP.", source: "Core Rulebook p.66" },
+        { name: "Light Step", req: "None", desc: "Avoid traps/noise.", source: "Core Rulebook p.67" },
+        { name: "Local Leader", req: "CHA 6, Level 2+", desc: "Supply lines/Stores.", source: "Settler's Guide p.21" },
+        { name: "Lock and Load", req: "STR 7, Level 2+", desc: "Big Guns Fire Rate bonus.", source: "Settler's Guide p.21" },
+        { name: "Master Thief", req: "PER 8, AGI 9", desc: "Stealing harder to detect.", source: "Core Rulebook p.67" },
+        { name: "Medic", req: "INT 8", desc: "Treat Injury re-roll.", source: "Core Rulebook p.67" },
+        { name: "Meltdown", req: "PER 10", desc: "Energy kills explode.", source: "Core Rulebook p.67" },
+        { name: "Mister Sandman", req: "AGI 9", desc: "Silenced sneak attack bonus.", source: "Core Rulebook p.67" },
+        { name: "Moving Target", req: "AGI 6", desc: "+Defense when sprinting.", source: "Core Rulebook p.67" },
+        { name: "Mysterious Stranger", req: "LCK 7", desc: "Chance for instant kill.", source: "Core Rulebook p.67" },
+        { name: "Nerd Rage!", req: "INT 8, Level 2+", desc: "Bonus when low HP.", source: "Core Rulebook p.68" },
+        { name: "Night Person", req: "PER 7", desc: "Ignore darkness penalty.", source: "Core Rulebook p.68" },
+        { name: "Ninja", req: "AGI 8", desc: "Melee sneak attack bonus.", source: "Core Rulebook p.68" },
+        { name: "Nocturnal Fortitude", req: "END 6, Level 12", desc: "+Max HP at night.", source: "Settler's Guide p.22" },
+        { name: "Nuclear Physicist", req: "INT 9", desc: "Rad weapon bonus.", source: "Core Rulebook p.68" },
+        { name: "Pain Train", req: "STR 9, END 7", desc: "Charge knocks prone (PA/Mutant).", source: "Core Rulebook p.68" },
+        { name: "Pannapictagraphist", req: "LCK 5", desc: "Magazine rerolls.", source: "Settler's Guide p.22" },
+        { name: "Paralyzing Palm", req: "STR 8", desc: "Unarmed stun.", source: "Core Rulebook p.69" },
+        { name: "Party Boy/Party Girl", req: "END 6, CHA 7", desc: "No alcohol addiction.", source: "Core Rulebook p.69" },
+        { name: "Pathfinder", req: "PER 6, END 6", desc: "Travel faster.", source: "Core Rulebook p.69" },
+        { name: "Pharmacist", req: "INT 8, Level 2+", desc: "RadAway heals more.", source: "Settler's Guide p.22" },
+        { name: "Pharma Farma", req: "LCK 6", desc: "Find more chems.", source: "Core Rulebook p.69" },
+        { name: "Photosynthetic", req: "END 7, Level 5+", desc: "Regen HP in sun.", source: "Settler's Guide p.22" },
+        { name: "Pickpocket", req: "PER 8, AGI 8, Level 1+", desc: "Stealing easier.", source: "Core Rulebook p.69" },
+        { name: "Piercing Strike", req: "STR 7", desc: "Melee piercing.", source: "Core Rulebook p.70" },
+        { name: "Pyromaniac", req: "END 6, Level 2+", desc: "Fire damage bonus.", source: "Core Rulebook p.70" },
+        { name: "Quack Surgeon", req: "CHA 7, Level 12+", desc: "Heal with booze.", source: "Settler's Guide p.22" },
+        { name: "Quick Draw", req: "AGI 6", desc: "Draw for free.", source: "Core Rulebook p.70" },
+        { name: "Quick Hands", req: "AGI 8", desc: "Fire rate reload bonus.", source: "Core Rulebook p.70" },
+        { name: "Rad Resistance", req: "END 8, Level 1+", desc: "+Rad DR.", source: "Core Rulebook p.70" },
+        { name: "Refractor", req: "PER 6, LCK 7, Level 1+", desc: "+Energy DR.", source: "Core Rulebook p.70" },
+        { name: "Rejuvenated", req: "END 7, Level 12+", desc: "Bonus when fed/watered.", source: "Settler's Guide p.22" },
+        { name: "Retribution", req: "END 8, LCK 8, Level 2+", desc: "Heal when ignoring damage.", source: "Settler's Guide p.23" },
+        { name: "Ricochet", req: "LCK 10, Level 5+", desc: "Reflect shots.", source: "Core Rulebook p.70" },
+        { name: "Rifleman", req: "AGI 7, Level 2+", desc: "Rifle damage bonus.", source: "Core Rulebook p.70" },
+        { name: "Robot Wrangler", req: "INT 5", desc: "Get robot companion.", source: "Settler's Guide p.23" },
+        { name: "Robotics Expert", req: "INT 8, Level 2+", desc: "Hack/repair robots.", source: "Core Rulebook p.70" },
+        { name: "Science!", req: "INT 6, Level 2+", desc: "Energy weapon mods.", source: "Core Rulebook p.71" },
+        { name: "Scoundrel", req: "CHA 7", desc: "Lying bonus.", source: "Core Rulebook p.71" },
+        { name: "Scrapper", req: "Level 3+", desc: "Salvage bonus.", source: "Core Rulebook p.71" },
+        { name: "Scrounger", req: "LCK 6, Level 1+", desc: "Find ammo.", source: "Core Rulebook p.71" },
+        { name: "Shotgun Surgeon", req: "STR 5, AGI 7", desc: "Shotgun piercing.", source: "Core Rulebook p.71" },
+        { name: "Skilled", req: "Level 3+", desc: "+Skill Ranks.", source: "Core Rulebook p.71" },
+        { name: "Size Matters", req: "END 7, AGI 6", desc: "Heavy weapon damage.", source: "Core Rulebook p.72" },
+        { name: "Slayer", req: "STR 8", desc: "Melee auto-crit.", source: "Core Rulebook p.72" },
+        { name: "Smooth Talker", req: "CHA 6", desc: "Social re-roll.", source: "Core Rulebook p.72" },
+        { name: "Snakeater", req: "END 7", desc: "+Poison DR.", source: "Core Rulebook p.72" },
+        { name: "Sniper", req: "PER 8, AGI 6", desc: "Aim bonus.", source: "Core Rulebook p.72" },
+        { name: "Solar Powered", req: "END 7", desc: "Heal rads in sun.", source: "Core Rulebook p.72" },
+        { name: "Squad Maneuvers", req: "CHA 7", desc: "Travel/Movement bonus.", source: "Settler's Guide p.23" },
+        { name: "Steady Aim", req: "STR 8, AGI 7", desc: "Aim rerolls.", source: "Core Rulebook p.72" },
+        { name: "Strong Back", req: "STR 5, Level 1+", desc: "+Carry weight.", source: "Core Rulebook p.73" },
+        { name: "Super Duper", req: "LCK 6, Level 3+", desc: "Crafting free items.", source: "Settler's Guide p.23" },
+        { name: "Tag!", req: "Level 5+", desc: "+1 Tag Skill.", source: "Core Rulebook p.73" },
+        { name: "Taking One for the Team", req: "END 7, CHA 6, Level 1+", desc: "Absorb ally damage.", source: "Settler's Guide p.23" },
+        { name: "Terrifying Presence", req: "STR 6, CHA 8, Level 3+", desc: "Threaten re-roll.", source: "Core Rulebook p.73" },
+        { name: "Thief", req: "PER 5, AGI 6", desc: "Sneak/Lockpick bonus.", source: "Core Rulebook p.68" },
+        { name: "Tinkerer", req: "END 5, INT 5", desc: "Repair robot bonus.", source: "Settler's Guide p.23" },
+        { name: "Toughness", req: "END 6, LCK 6, Level 1+", desc: "+1 Phys DR.", source: "Core Rulebook p.73" },
+        { name: "True Friends", req: "PER 6, CHA 6", desc: "Reputation save.", source: "Settler's Guide p.23" }
+    ];
+
+    const originRules = {
+        "Survivor": { name: "Survivor", source: "Core Rulebook p.56", desc: "The living legacy of those who prepared for Armageddon on their own. You are only alive because your forebears dug in and survived.", traitName: "Survivor Traits", traitDesc: "Choose two Traits from the list (e.g. Gifted, Small Frame).", equipment: ["Mercenary", "Raider", "Settler", "Trader", "Wanderer"], limits: {}, traits: true, traitListKey: "Survivor" },
+        "Vault Dweller": { name: "Vault Dweller", source: "Core Rulebook p.57", desc: "You come from an underground Vault. You are healthier and better educated than most wastelanders, but also more isolated.", traitName: "Vault Kid", traitDesc: "Disease Resist, +1 Tag Skill.", equipment: ["Vault-Tec Resident", "Vault-Tec Security"], limits: {}, bonusTags: 1 },
+        "Brotherhood": { name: "Brotherhood Initiate", source: "Core Rulebook p.51", desc: "Born from the terrible revelations of the Mariposa Rebellion, you are dedicated to the preservation of technology.", traitName: "Chain That Binds", traitDesc: "Gain 1 extra Tag Skill.", equipment: ["BoS Initiate", "BoS Scribe"], limits: {}, bonusTags: 1 },
+        "Ghoul": { name: "Ghoul", source: "Core Rulebook p.52", desc: "Necrotic post-humans immune to radiation.", traitName: "Necrotic Post-Human", traitDesc: "Healed by Rads. Survival is Tag Skill.", equipment: ["Mercenary", "Raider", "Settler", "Trader", "Wanderer"], limits: {} },
+        "Super Mutant": { name: "Super Mutant", source: "Core Rulebook p.53", desc: "Infected with F.E.V., you are a massive, muscular killing machine. You are incredibly strong and tough, but often lack intelligence or charisma.", traitName: "Forced Evolution", traitDesc: "STR+2, END+2, Int/Cha Max 6. Immune Rads/Poison.", equipment: ["Brute", "Skirmisher"], limits: {int:6, cha:6, str:12, end:12}, mods: {str:2, end:2} },
+        "Mister Handy": { name: "Mister Handy", source: "Core Rulebook p.54", desc: "A reliable General Atomics robot with distinct personality programming.", traitName: "Robot", traitDesc: "360 view, fixed carry 150 lbs, no healing.", equipment: ["Miss Nanny", "Mister Farmhand", "Mister Gutsy", "Mister Handy", "Nurse Handy"], limits: {}, robot: true, fixedCarry: 150 },
+        "Minuteman": { name: "Commonwealth Minuteman", source: "Settler's Guide p.10", desc: "Protect the people at a minute's notice.", traitName: "United We Stand", traitDesc: "Settlements +Def. Gain Energy Weapons or Small Guns tag. +1 DR in cover.", equipment: ["Minuteman Militia"], limits: {} },
+        "NCR": { name: "New California Republic", source: "Settler's Guide p.11", desc: "Citizens of the New California Republic.", traitName: "New Californian", traitDesc: "Choose two traits from the NCR list or Survivor list.", equipment: ["NCR Trooper", "NCR Ranger"], limits: {}, traits: true, traitListKey: "NCR" },
+        "Tribal": { name: "Tribal", source: "Wanderer's Guide p.16", desc: "Wastelanders living in close-knit tribes.", traitName: "Tribal", traitDesc: "Choose two traits from the Tribal list.", equipment: ["Hunter", "Gatherer", "Warrior"], limits: {}, traits: true, traitListKey: "Tribal" },
+        "Protectron": { name: "Protectron", source: "Settler's Guide p.12", desc: "Sturdy work drones.", traitName: "Protect or Destroy", traitDesc: "Reroll hazard tests. Immune Rads/Poison. Max 2 mods. Fixed Carry 225 lbs.", equipment: ["Brigadier", "Construction", "Medic", "Police"], limits: {}, robot: true, fixedCarry: 225 },
+        "Robobrain": { name: "Robobrain", source: "Settler's Guide p.13", desc: "Cyborg robots with human brains.", traitName: "Robobrain", traitDesc: "Track movement. Fixed Carry 150 lbs.", equipment: ["Standard Robobrain"], limits: {}, robot: true, fixedCarry: 150 },
+        "Securitron": { name: "Securitron", source: "Settler's Guide p.14", desc: "High-end security robots on a monowheel.", traitName: "Mk I", traitDesc: "Fixed Carry 150 lbs.", equipment: ["Police Upgrade", "Military Upgrade"], limits: {}, robot: true, fixedCarry: 150 },
+        "Gen3Synth": { name: "Generation 3 Synth", source: "Winter of Atom p.24", desc: "Bio-synthetic humanoids.", traitName: "More Than Human", traitDesc: "+1 Tag Skill. Immune Poison/Rad/Disease.", equipment: ["Institute Courser", "Escaped Synth"], limits: {}, bonusTags: 1 },
+        "Gen2Synth": { name: "Generation 2 Synth", source: "Winter of Atom p.24", desc: "Mechanical androids.", traitName: "More Than Human (Gen 2)", traitDesc: "Robot rules. Immune Poison/Rad/Disease.", equipment: ["Institute Trooper"], limits: {}, robot: true },
+        "ChildOfAtom": { name: "Child of Atom", source: "Winter of Atom p.23", desc: "Worshippers of the glow.", traitName: "Rad Sponge", traitDesc: "Heal HP when taking Rad damage.", equipment: ["Confessor", "Zealot"], limits: {} },
+        "BrotherhoodOutcast": { name: "Brotherhood Outcast", source: "Wanderer's Guide p.12", desc: "Former BoS member.", traitName: "Outcast", traitDesc: "+1 Tag Skill. Gain junk.", equipment: ["Ex-Knight", "Ex-Scribe"], limits: {}, bonusTags: 1 },
+        "EnclaveRemnant": { name: "Enclave Remnant", source: "Royal Flush p.10", desc: "Hiding survivors of the Enclave.", traitName: "Hidden Past", traitDesc: "Gain Tag: Science, Energy Weapons, or Pilot. Access to Enclave bunkers.", equipment: ["Officer", "Scientist"], limits: {} },
+        "FollowerApocalypse": { name: "Follower of the Apocalypse", source: "Royal Flush p.13", desc: "Humanitarian educators.", traitName: "Peace and Knowledge", traitDesc: "Gain Tag: Medicine, Science, or Speech.", equipment: ["Doctor", "Educator"], limits: {} },
+        "Nightkin": { name: "Nightkin", source: "Wanderer's Guide p.14", desc: "Stealth-addicted Super Mutants.", traitName: "Master's Chosen", traitDesc: "Max 2 Tags. Start with Stealth Boy.", equipment: ["Nightkin Master", "Nightkin Elite"], limits: {int:8, cha:8, str:12, end:12}, mods: {str:2, end:2}, setMaxTags: 2 },
+        "Viper": { name: "Viper Initiate", source: "Royal Flush p.17", desc: "Cultists using poison.", traitName: "Viper's Kiss", traitDesc: "Coated melee weapons inflict Persistent Poison damage.", equipment: ["Pit Viper", "Fang"], limits: {} }
+    };
+
+    const xpTable = [0, 100, 300, 600, 1000, 1500, 2100, 2800, 3600, 4500, 5500, 6600, 7800, 9100, 10500, 12000, 13600, 15300, 17100, 19000, 21000];
+    const startingWealthTable = {1:0, 2:100, 3:250, 4:450, 5:700, 6:1000, 7:1350, 8:1750, 9:2200, 10:2700, 11:3250, 12:3850, 13:4500, 14:5200, 15:5950, 16:6750, 17:7600, 18:8500, 19:9450, 20:10450};
+    const maxRarityTable = {1:1, 2:1, 3:1, 4:1, 5:2, 6:2, 7:2, 8:2, 9:3, 10:3, 11:3, 12:3, 13:4, 14:4, 15:4, 16:4, 17:5, 18:5, 19:5, 20:5};
+
+    let charData = { 
+        name: "", origin: "Survivor", level: 1, xp: 0, 
+        attributes: {str:5, per:5, end:5, cha:5, int:5, agi:5, lck:5}, 
+        skills: {}, perks: [], equipment: "", weapons: [], derived: {}, traits: [] 
+    };
+    let builderPerks = []; let isPipBoyMode = true; let currentTagLimit = 3;
+
+    window.onload = () => {
+        // Fix for "Select same trait" popup on open - clear selections on load
+        document.getElementById("trait1").value = "";
+        document.getElementById("trait2").value = "";
+        
+        requestAnimationFrame(() => {
+            const skillCont = document.getElementById("skillsContainer");
+            const manageSkillSel = document.getElementById("manageSkillSelect");
+            skillsList.forEach(s => {
+                let div = document.createElement("div"); div.className = "skill-input-row";
+                div.innerHTML = `<input type="checkbox" id="tag_${s}" onchange="toggleTag('${s}')"> <label style="display:inline; margin:0;" for="tag_${s}">${s} <span style="font-size:0.8em; color:#666;">(${skillAttrs[s]})</span></label><input type="number" id="rank_${s}" class="skill-rank-input" value="0" min="0" max="6" onchange="recalculateGlobals()">`;
+                skillCont.appendChild(div);
+                let opt = document.createElement("option"); opt.value = s; opt.text = s; manageSkillSel.appendChild(opt);
+            });
+
+            const originSel = document.getElementById("origin");
+            originSel.innerHTML = "";
+            for (const [key, value] of Object.entries(originRules)) {
+                let opt = document.createElement("option"); opt.value = key; opt.text = `${value.name} – ${value.source}`; originSel.appendChild(opt);
+            }
+
+            const perkSel = document.getElementById("perkSelect");
+            const managePerkSel = document.getElementById("managePerkSelect");
+            perksData.sort((a,b) => a.name.localeCompare(b.name));
+            perksData.forEach((p, idx) => {
+                let opt1 = document.createElement("option"); opt1.value = idx; opt1.text = p.name; perkSel.appendChild(opt1);
+                let opt2 = document.createElement("option"); opt2.value = idx; opt2.text = p.name; managePerkSel.appendChild(opt2);
+            });
+            
+            // Populate Weapons Presets (Both Builder and Manager)
+            const wepPresetBuilder = document.getElementById("builderWeaponPreset");
+            const wepPresetManager = document.getElementById("managerWeaponPreset");
+            commonWeapons.sort((a,b) => a.name.localeCompare(b.name));
+            commonWeapons.forEach((w, idx) => {
+                let optB = document.createElement("option"); optB.value = idx; optB.text = w.name; wepPresetBuilder.appendChild(optB);
+                let optM = document.createElement("option"); optM.value = idx; optM.text = w.name; wepPresetManager.appendChild(optM);
+            });
+
+            perkSel.addEventListener('change', () => updatePerkDesc('perkSelect', 'perkDesc'));
+            managePerkSel.addEventListener('change', () => updatePerkDesc('managePerkSelect', 'managePerkDesc'));
+            document.getElementById('headerMascot').innerHTML = mascotSVG;
+
+            skillsList.forEach(s => charData.skills[s] = {tag: false, rank: 0});
+            applyOriginRules(); // Apply rules immediately
+        });
+    };
+
+    function toggleTag(skillName) {
+        const checkbox = document.getElementById(`tag_${skillName}`);
+        const rankInput = document.getElementById(`rank_${skillName}`);
+        let currentRank = parseInt(rankInput.value) || 0;
+
+        if (checkbox.checked) {
+            // Add 2 free ranks, cap at 6
+            rankInput.value = Math.min(6, currentRank + 2);
+        } else {
+            // Remove 2 free ranks, floor at 0
+            rankInput.value = Math.max(0, currentRank - 2);
+        }
+        recalculateGlobals();
+    }
+
+    // --- WEAPON FABRICATOR FUNCTIONS ---
+    function fillWeaponPreset(mode) {
+        const idPrefix = mode === 'builder' ? 'builder' : 'manager';
+        const presetId = mode === 'builder' ? 'builderWeaponPreset' : 'managerWeaponPreset';
+        
+        const idx = document.getElementById(presetId).value;
+        if(idx === "") return;
+        const w = commonWeapons[idx];
+        document.getElementById(idPrefix + "WepName").value = w.name;
+        document.getElementById(idPrefix + "WepDmg").value = w.dmg;
+        document.getElementById(idPrefix + "WepEff").value = w.eff;
+        document.getElementById(idPrefix + "WepType").value = w.type;
+        document.getElementById(idPrefix + "WepQual").value = w.qual;
+        document.getElementById(idPrefix + "WepRate").value = w.rate === "-" ? 0 : w.rate;
+        document.getElementById(idPrefix + "WepRange").value = w.range;
+    }
+
+    function clearWeaponInputs(mode) {
+        const idPrefix = mode === 'builder' ? 'builder' : 'manager';
+        const presetId = mode === 'builder' ? 'builderWeaponPreset' : 'managerWeaponPreset';
+        
+        document.getElementById(presetId).value = "";
+        document.getElementById(idPrefix + "WepName").value = "";
+        document.getElementById(idPrefix + "WepDmg").value = "";
+        document.getElementById(idPrefix + "WepEff").value = "";
+        document.getElementById(idPrefix + "WepType").value = "";
+        document.getElementById(idPrefix + "WepQual").value = "";
+        document.getElementById(idPrefix + "WepRate").value = 0;
+        document.getElementById(idPrefix + "WepRange").value = "";
+    }
+
+    // Function to add from Builder (Character Creation)
+    function addWeaponFromBuilder() {
+        _addWeaponGeneric('builder');
+        renderBuilderWeapons();
+    }
+    
+    // Function to add from Manager (During Play)
+    function addWeaponFromManager() {
+        _addWeaponGeneric('manager');
+        renderWeapons();
+    }
+
+    function _addWeaponGeneric(mode) {
+        const idPrefix = mode === 'builder' ? 'builder' : 'manager';
+        const name = document.getElementById(idPrefix + "WepName").value;
+        if(!name) { alert("Weapon Name is required."); return; }
+        
+        const newWep = {
+            name: name,
+            dmg: document.getElementById(idPrefix + "WepDmg").value,
+            eff: document.getElementById(idPrefix + "WepEff").value || "-",
+            type: document.getElementById(idPrefix + "WepType").value,
+            qual: document.getElementById(idPrefix + "WepQual").value || "-",
+            rate: document.getElementById(idPrefix + "WepRate").value,
+            range: document.getElementById(idPrefix + "WepRange").value,
+            mag: 0,
+            pool: 0
+        };
+        
+        if(!charData.weapons) charData.weapons = [];
+        charData.weapons.push(newWep);
+        clearWeaponInputs(mode);
+    }
+
+    function renderBuilderWeapons() {
+        const container = document.getElementById("builderWeaponsListContainer");
+        container.innerHTML = "";
+        if(!charData.weapons || charData.weapons.length === 0) return;
+        
+        container.innerHTML = "<strong>Loadout:</strong>";
+        charData.weapons.forEach((w, i) => {
+            container.innerHTML += `<div class="added-perk-item"><span>${w.name} (${w.dmg} CD)</span><button class="delete-btn" onclick="removeWeapon(${i}, 'builder')">X</button></div>`;
+        });
+    }
+
+    function renderWeapons() {
+        const tbody = document.getElementById("sheetWeaponsBody");
+        tbody.innerHTML = "";
+        if(!charData.weapons || charData.weapons.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666; padding:20px;">No weapons equipped.</td></tr>`;
+            return;
+        }
+
+        charData.weapons.forEach((w, i) => {
+            let row = `<tr>
+                <td><strong>${w.name}</strong><br><span style="font-size:0.75em; color:#888;">${w.type} | Rate: ${w.rate} | Rng: ${w.range}</span></td>
+                <td style="font-size:1.2em; font-weight:bold; text-align:center;">${w.dmg} <span style="font-size:0.6em">CD</span></td>
+                <td style="font-size:0.85em;">${w.eff}</td>
+                <td style="font-size:0.85em;">${w.qual}</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <div>
+                            <div style="font-size:0.6em; text-align:center; color:#888;">MAG</div>
+                            <input type="number" class="ammo-input" value="${w.mag}" onchange="updateWeaponAmmo(${i}, 'mag', this.value)">
+                        </div>
+                        <span style="font-size:1em;">/</span>
+                        <div>
+                            <div style="font-size:0.6em; text-align:center; color:#888;">POOL</div>
+                            <input type="number" class="ammo-input" value="${w.pool}" onchange="updateWeaponAmmo(${i}, 'pool', this.value)">
+                        </div>
+                        <button class="delete-btn" onclick="removeWeapon(${i}, 'sheet')">X</button>
+                    </div>
+                </td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    function updateWeaponAmmo(index, field, value) {
+        charData.weapons[index][field] = parseInt(value) || 0;
+    }
+
+    function removeWeapon(index, source) {
+        // Confirmation logic
+        // If duplicates exist, this removes by index, which is correct behavior for identical items.
+        if(confirm(`Remove weapon?`)) {
+            charData.weapons.splice(index, 1);
+            if(source === 'builder') renderBuilderWeapons();
+            else renderWeapons();
+        }
+    }
+
+
+    // --- MASTER CALCULATION FUNCTION ---
+    function recalculateGlobals() {
+        const o = document.getElementById("origin").value;
+        const rules = originRules[o];
+        let lvl = parseInt(document.getElementById("startLevel").value) || 1;
+
+        // 1. Calculate Base Limits
+        let baseTags = 3;
+        if(rules.bonusTags) baseTags += rules.bonusTags;
+        if(rules.setMaxTags) baseTags = rules.setMaxTags;
+
+        let extraTagPoints = 0;
+        let extraSpecialPoints = 0;
+        let extraSkillPoints = 0;
+
+        // 2. Check Traits
+        if(!document.getElementById("traitSelector").classList.contains("hidden")) {
+            const t1 = document.getElementById("trait1").value;
+            const t2 = document.getElementById("trait2").value;
+            // Prevent duplicate selection error only if values are actually selected
+            if (t1 && t2 && t1 !== "None" && t1 !== "" && t1 === t2) {
+                alert("You cannot select the same Trait twice!");
+                document.getElementById("trait2").value = "";
+                return;
+            }
+            if(t1 === "Educated" || t2 === "Educated") extraTagPoints += 1;
+            if(t1 === "Gifted" || t2 === "Gifted") extraSpecialPoints += 2;
+        }
+
+        // 3. Check Perks (Iterate through builderPerks)
+        builderPerks.forEach(pName => {
+            if(pName === "Educated") extraTagPoints += 1;
+            if(pName === "Tag!") extraTagPoints += 1;
+            if(pName === "Intense Training") extraSpecialPoints += 1;
+            if(pName === "Skilled") extraSkillPoints += 2; // Assuming rank 1 adds +2 points
+        });
+
+        // 4. Update Tag Counter
+        let currentTagCount = 0;
+        skillsList.forEach(s => {
+            if(document.getElementById(`tag_${s}`).checked) currentTagCount++;
+        });
+        const tagLimit = baseTags + extraTagPoints;
+        const tagEl = document.getElementById("tagCount");
+        tagEl.innerText = `${tagLimit - currentTagCount} remaining`;
+        tagEl.style.color = (tagLimit - currentTagCount) < 0 ? "var(--danger-color)" : "#aaa";
+
+        // 5. Update SPECIAL Counter
+        let specialLimit = 5 + extraSpecialPoints;
+        if(document.getElementById("specialOverrideCheck").checked) specialLimit = parseInt(document.getElementById("specialOverrideVal").value) || 0;
+        
+        let pts = 0;
+        let bases = {str:5, per:5, end:5, cha:5, int:5, agi:5, lck:5};
+        if(rules.mods) {
+             if(rules.mods.str) bases.str += rules.mods.str;
+             if(rules.mods.end) bases.end += rules.mods.end;
+             if(rules.mods.per) bases.per += rules.mods.per;
+             if(rules.mods.cha) bases.cha += rules.mods.cha;
+             if(rules.mods.int) bases.int += rules.mods.int;
+             if(rules.mods.agi) bases.agi += rules.mods.agi;
+             if(rules.mods.lck) bases.lck += rules.mods.lck;
+        }
+
+        ["str","per","end","cha","int","agi","lck"].forEach(a => {
+            let val = parseInt(document.getElementById(a).value);
+            // Points spent is Value - Base. If Value (7) - Base (7) = 0 cost. Correct.
+            pts += (val - bases[a]);
+        });
+        let remaining = specialLimit - pts;
+        let spEl = document.getElementById("specialPoints");
+        spEl.innerText = remaining;
+        spEl.style.color = remaining < 0 ? "var(--danger-color)" : "var(--accent-color)";
+
+        // 6. Update Skill Points
+        const int = parseInt(document.getElementById("int").value);
+        let maxSkillPoints = 9 + int + (lvl - 1) + extraSkillPoints;
+        if(document.getElementById("skillOverrideCheck").checked) maxSkillPoints = parseInt(document.getElementById("skillOverrideVal").value) || 0;
+        
+        let skillSpent = 0;
+        skillsList.forEach(s => {
+            // const isTagged = document.getElementById(`tag_${s}`).checked;
+            // In Tag Logic Update, we already modified the rank. Here we just calculate cost.
+            // Cost is Rank - (2 if Tagged else 0).
+            const isTagged = document.getElementById(`tag_${s}`).checked;
+            const rank = parseInt(document.getElementById(`rank_${s}`).value) || 0;
+            let cost = rank;
+            if(isTagged) cost = Math.max(0, rank - 2);
+            skillSpent += cost;
+        });
+        const skillTracker = document.getElementById("skillPointsSpent");
+        document.getElementById("skillPointsMax").innerText = maxSkillPoints;
+        skillTracker.innerText = skillSpent;
+        skillTracker.style.color = skillSpent > maxSkillPoints ? "var(--danger-color)" : "var(--accent-color)";
+
+        // 7. Update Perk Description State
+        updatePerkDesc('perkSelect', 'perkDesc');
+        
+        // 8. Update Perk Limits (Builder)
+        const perkLimit = 1 + (lvl - 1);
+        document.getElementById("perksMaxCount").innerText = perkLimit;
+        document.getElementById("perksSelectedCount").innerText = builderPerks.length;
+        document.getElementById("addPerkBtn").disabled = (builderPerks.length >= perkLimit);
+    }
+    
+    // --- WRAPPERS FOR EVENTS ---
+    function calcStats() { recalculateGlobals(); }
+    function calcSkillPoints() { recalculateGlobals(); }
+    function updateTagCount() { recalculateGlobals(); }
+    function checkTraitEffects() { recalculateGlobals(); }
+    function updateBuilderLimits() { recalculateGlobals(); }
+
+    // --- ORIGIN LOGIC ---
+    function applyOriginRules() {
+        requestAnimationFrame(() => {
+            const o = document.getElementById("origin").value;
+            const rules = originRules[o];
+            const box = document.getElementById("originInfoBox");
+            let eqHtml = rules.equipment ? `<div class="origin-section-title">EQUIPMENT PACKS:</div><ul class="origin-list">${rules.equipment.map(e => `<li>${e}</li>`).join('')}</ul>` : "";
+            box.innerHTML = `<div class="origin-header">${rules.name}</div><div class="origin-source">${rules.source}</div><div class="origin-desc">${rules.desc}</div><div class="origin-section-title">TRAIT: ${rules.traitName}</div><div class="origin-trait-text">${rules.traitDesc}</div>${eqHtml}`;
+
+            // Traits Logic
+            if(rules.traits && rules.traitListKey && traitsData[rules.traitListKey]) {
+                document.getElementById("traitSelector").classList.remove("hidden");
+                const t1 = document.getElementById("trait1");
+                const t2 = document.getElementById("trait2");
+                t1.innerHTML = '<option value="">-- Select Trait --</option><option value="None">None</option>';
+                t2.innerHTML = '<option value="">-- Select Trait --</option><option value="None">None</option>';
+                
+                // 1. Get the specific traits for this origin (e.g., NCR traits)
+                let traitOptions = [...traitsData[rules.traitListKey]];
+                
+                // 2. FIX: If the origin is NOT Survivor (like NCR or Tribal), ADD the Survivor traits to the list
+                if (rules.traitListKey !== "Survivor") {
+                    traitOptions = traitOptions.concat(traitsData["Survivor"]);
+                }
+                
+                // 3. Sort alphabetically so they are easy to find
+                traitOptions.sort();
+
+                traitOptions.forEach(t => {
+                    let opt1 = document.createElement("option"); opt1.value = t; opt1.text = t;
+                    let opt2 = document.createElement("option"); opt2.value = t; opt2.text = t;
+                    t1.appendChild(opt1);
+                    t2.appendChild(opt2);
+                });
+            } else {
+                document.getElementById("traitSelector").classList.add("hidden");
+            }
+            
+            // Attributes Logic
+            ["str","per","end","cha","int","agi","lck"].forEach(a => {
+                let el = document.getElementById(a);
+                let mod = (rules.mods && rules.mods[a]) ? rules.mods[a] : 0;
+                let base = 5 + mod;
+                // Ensure input respects the new base logic
+                el.min = (rules.limits && rules.limits[a] < 4) ? rules.limits[a] : 4 + mod; 
+                el.max = (rules.limits && rules.limits[a]) ? rules.limits[a] : 10;
+                // Force update value to base + mod
+                el.value = base;
+            });
+            
+            recalculateGlobals();
+        });
+    }
+
+    function updatePerkDesc(selectId, boxId) {
+        const idx = document.getElementById(selectId).value;
+        const box = document.getElementById(boxId);
+        if (idx === "") { box.value = ""; box.className = ""; return; }
+        const perk = perksData[idx];
+        const reqCheck = checkRequirements(perk.req);
+        let status = reqCheck.met ? "[ REQUIREMENTS MET ]" : "[ REQUIREMENTS NOT MET ]";
+        let detail = reqCheck.met ? "" : `Missing: ${reqCheck.reason}\n`;
+        box.value = `${status}\n${detail}SOURCE: ${perk.source}\nREQ: ${perk.req}\nEFFECT: ${perk.desc}`;
+        box.className = reqCheck.met ? "req-met" : "req-fail";
+    }
+
+    function checkRequirements(reqStr) {
+        let stats = { ...charData.attributes };
+        let lvl = charData.level;
+        let origin = document.getElementById("builderView").classList.contains("hidden") ? charData.origin : document.getElementById("origin").value;
+
+        if(!document.getElementById("builderView").classList.contains("hidden")) {
+            lvl = parseInt(document.getElementById("startLevel").value) || 1;
+            ["str","per","end","cha","int","agi","lck"].forEach(a => { stats[a] = parseInt(document.getElementById(a).value); });
+        }
+
+        let met = true;
+        let reason = [];
+        const parts = reqStr.split(", ");
+        
+        parts.forEach(p => {
+            const statMatch = p.match(/(STR|PER|END|CHA|INT|AGI|LCK)\s*(\d+)/i);
+            if (statMatch) {
+                const attr = statMatch[1].toLowerCase();
+                const val = parseInt(statMatch[2]);
+                if (stats[attr] < val) { met = false; reason.push(`${statMatch[1]} ${val} (Have ${stats[attr]})`); }
+            }
+            const lvlMatch = p.match(/Level\s*(\d+)/i);
+            if (lvlMatch) {
+                if (lvl < parseInt(lvlMatch[1])) { met = false; reason.push(`Level ${lvlMatch[1]}`); }
+            }
+            const isRobot = originRules[origin].robot === true;
+            if (p.toLowerCase().includes("not a robot") || p.toLowerCase().includes("not robot")) {
+                if (isRobot) { met = false; reason.push("Is Robot"); }
+            }
+        });
+
+        return { met: met, reason: reason.join(", ") };
+    }
+
+    function addBuilderPerk() {
+        const idx = document.getElementById("perkSelect").value;
+        if(idx === "") return;
+        const perkName = perksData[idx].name;
+        const reqCheck = checkRequirements(perksData[idx].req);
+        
+        if(!reqCheck.met) { alert("Requirements not met: " + reqCheck.reason); return; }
+        if(builderPerks.includes(perkName)) { alert("Perk already selected."); return; }
+        
+        const lvl = parseInt(document.getElementById("startLevel").value) || 1;
+        if(builderPerks.length >= 1 + (lvl - 1)) { alert("Perk limit reached."); return; }
+        
+        builderPerks.push(perkName);
+        renderBuilderPerks();
+        recalculateGlobals();
+    }
+
+    function removeBuilderPerk(index) {
+        builderPerks.splice(index, 1);
+        renderBuilderPerks();
+        recalculateGlobals();
+    }
+
+    function renderBuilderPerks() {
+        const div = document.getElementById("builderPerksList");
+        div.innerHTML = "";
+        builderPerks.forEach((p, i) => {
+            div.innerHTML += `<div class="added-perk-item"><span>${p}</span><button class="delete-btn" onclick="removeBuilderPerk(${i})">X</button></div>`;
+        });
+    }
+
+    function finalizeCharacter() {
+        charData.name = document.getElementById("charName").value || "Wanderer";
+        charData.origin = document.getElementById("origin").value;
+        charData.level = parseInt(document.getElementById("startLevel").value);
+        charData.xp = xpTable[charData.level - 1] || 0;
+        charData.equipment = document.getElementById("equipment").value;
+        
+        if(charData.level > 1) {
+            let caps = startingWealthTable[charData.level];
+            let rarity = maxRarityTable[charData.level];
+            charData.equipment += `\n\n[STARTING BONUS]\n+${caps} Caps for Gear\nMax Rarity Allowed: ${rarity}`;
+        }
+        
+        ["str","per","end","cha","int","agi","lck"].forEach(a => { charData.attributes[a] = parseInt(document.getElementById(a).value); });
+        
+        skillsList.forEach(s => {
+            let tagged = document.getElementById(`tag_${s}`).checked;
+            let rank = parseInt(document.getElementById(`rank_${s}`).value);
+            charData.skills[s] = { tag: tagged, rank: rank };
+        });
+        
+        if(!document.getElementById("traitSelector").classList.contains("hidden")) {
+            const t1 = document.getElementById("trait1").value;
+            const t2 = document.getElementById("trait2").value;
+            if(t1 !== "None") charData.traits.push(t1);
+            if(t2 !== "None") charData.traits.push(t2);
+        }
+        
+        charData.perks = [...builderPerks];
+        calcDerived();
+        document.getElementById("builderView").classList.add("hidden");
+        document.getElementById("sheetView").style.display = "block";
+        document.getElementById("managementControls").style.display = "block";
+        document.getElementById("manageEquipment").value = charData.equipment;
+        renderSheet();
+    }
+
+    function calcDerived() {
+        let a = charData.attributes;
+        let d = charData.derived;
+        let o = charData.origin;
+        d.hp = a.end + a.lck + (charData.level - 1);
+        d.init = a.per + a.agi;
+        d.def = (a.agi >= 9) ? 2 : 1;
+        if(charData.traits.includes("Small Frame")) { d.carry = 150 + (a.str * 5); } 
+        else if(originRules[o].fixedCarry) { d.carry = originRules[o].fixedCarry; } 
+        else { d.carry = 150 + (a.str * 10); }
+        d.melee = "+0";
+        if(a.str >=7 && a.str <=8) d.melee = "+1 CD";
+        if(a.str >=9 && a.str <=10) d.melee = "+2 CD";
+        if(a.str >=11) d.melee = "+3 CD";
+        if(charData.traits.includes("Heavy Handed")) { d.melee += " (+1 CD Heavy Handed)"; }
+        d.physDR = 0; d.enDR = 0; d.radDR = 0; d.poisDR = 0;
+        
+        let perks = document.getElementById("builderView").classList.contains("hidden") ? charData.perks : builderPerks;
+        if(perks.includes("Life Giver")) { d.hp += a.end; }
+        if(perks.includes("Strong Back")) { d.carry += 25; }
+        if(perks.includes("Toughness")) { d.physDR += 1; }
+        if(perks.includes("Refractor")) { d.enDR += 1; }
+        if(perks.includes("Rad Resistance")) { d.radDR += 1; }
+        if(o === "Viper") { d.poisDR = 1 + Math.floor(charData.level / 5); }
+        if(o === "Super Mutant") { d.radDR = "Immune"; d.poisDR = "Immune"; }
+        if(o === "Ghoul") { d.radDR = "Heals"; }
+        if(originRules[o].robot || o === "Gen2Synth") { d.radDR = "Immune"; d.poisDR = "Immune"; }
+        if(o === "Gen3Synth") { d.radDR = "Immune"; d.poisDR = "Immune"; }
+    }
+
+    function renderSheet() {
+        document.getElementById("sheetName").innerText = charData.name;
+        document.getElementById("sheetOrigin").innerText = `${originRules[charData.origin].name} — ${originRules[charData.origin].source}`;
+        document.getElementById("sheetLevel").innerText = charData.level;
+        document.getElementById("sheetXP").innerText = charData.xp;
+        ["str","per","end","cha","int","agi","lck"].forEach(a => { document.getElementById(`sheet${a.charAt(0).toUpperCase() + a.slice(1)}`).innerText = charData.attributes[a]; });
+        document.getElementById("sheetInit").innerText = charData.derived.init;
+        document.getElementById("sheetDef").innerText = charData.derived.def;
+        document.getElementById("sheetMelee").innerText = charData.derived.melee;
+        document.getElementById("sheetCarry").innerText = charData.derived.carry;
+        document.getElementById("sheetMaxHP").innerText = charData.derived.hp;
+        document.getElementById("sheetPhysDR").innerText = charData.derived.physDR;
+        document.getElementById("sheetEnDR").innerText = charData.derived.enDR;
+        document.getElementById("sheetRadDR").innerText = charData.derived.radDR;
+        document.getElementById("sheetPoisDR").innerText = charData.derived.poisDR;
+        const tbody = document.getElementById("sheetSkillsBody");
+        tbody.innerHTML = "";
+        skillsList.forEach(s => {
+            let sk = charData.skills[s];
+            let row = `<tr><td style="text-align:center"><div class="tag-box ${sk.tag ? 'filled' : ''}"></div></td><td>${s} <span style="color:${isPipBoyMode ? '#10b981' : '#888'}; font-size:0.8em">(${skillAttrs[s]})</span></td><td style="font-weight:bold; text-align:center;">${sk.rank}</td></tr>`;
+            tbody.innerHTML += row;
+        });
+        const perksDiv = document.getElementById("sheetPerksList");
+        perksDiv.innerHTML = `<div class="perk-item"><strong>Trait:</strong> ${originRules[charData.origin].traitName}</div>`;
+        if(charData.traits.length > 0) { perksDiv.innerHTML += `<div class="perk-item"><strong>Sub-Traits:</strong> ${charData.traits.join(", ")}</div>`; }
+        charData.perks.forEach((p, index) => { perksDiv.innerHTML += `<div class="perk-item"><span>${p}</span><button class="delete-btn" onclick="removePerk(${index})">X</button></div>`; });
+        document.getElementById("sheetEquipment").innerHTML = `<div style="white-space: pre-wrap;">${charData.equipment}</div>`;
+        document.getElementById("manageXP").value = charData.xp;
+        
+        renderWeapons();
+    }
+
+    function removePerk(index) { if(confirm("Remove this perk?")) { charData.perks.splice(index, 1); calcDerived(); renderSheet(); } }
+    function toggleTheme() {
+        isPipBoyMode = !isPipBoyMode;
+        const sheet = document.getElementById("sheetView");
+        if(isPipBoyMode) { sheet.classList.remove("theme-paper"); sheet.classList.add("theme-pipboy"); } 
+        else { sheet.classList.remove("theme-pipboy"); sheet.classList.add("theme-paper"); }
+        renderSheet();
+    }
+    function addXP() { charData.xp = parseInt(document.getElementById("manageXP").value) || 0; let newLevel = 1; for(let i=0; i<xpTable.length; i++) { if(charData.xp >= xpTable[i]) newLevel = i+1; } if(newLevel > charData.level) { alert(`Level Up! You are now level ${newLevel}. +1 Max HP.`); charData.level = newLevel; calcDerived(); } renderSheet(); updatePerkDesc('managePerkSelect', 'managePerkDesc'); }
+    function levelUp() { charData.level++; charData.xp = xpTable[charData.level-1] || charData.xp; calcDerived(); renderSheet(); updatePerkDesc('managePerkSelect', 'managePerkDesc'); }
+    function addPerkFromManager() { let pIdx = document.getElementById("managePerkSelect").value; if(pIdx !== "") { let pName = perksData[pIdx].name; if(charData.perks.includes(pName)) { alert("You already have this perk!"); } else { charData.perks.push(pName); calcDerived(); renderSheet(); } } }
+    function increaseSkillRank() { let s = document.getElementById("manageSkillSelect").value; if(charData.skills[s].rank < 6) { charData.skills[s].rank++; renderSheet(); } }
+    function printSheet() { window.print(); }
+    
+    // --- SAVE AND LOAD ---
+    function saveCharacterText() {
+        let name = charData.name; let d = charData.derived; let a = charData.attributes;
+        let text = `FALLOUT D20 CHARACTER SHEET\n===========================\nName: ${name}  |  Origin: ${originRules[charData.origin].name}  |  Level: ${charData.level}\n\nS.P.E.C.I.A.L.\n-------------\nSTR: ${a.str}  PER: ${a.per}  END: ${a.end}  CHA: ${a.cha}  INT: ${a.int}  AGI: ${a.agi}  LCK: ${a.lck}\n\nSTATS\n-----\nHP: ${d.hp}  |  Init: ${d.init}  |  Def: ${d.def}  |  Carry: ${d.carry}\nMelee Bonus: ${d.melee}\nResistances: Phys ${d.physDR} | Energy ${d.enDR} | Rad ${d.radDR}\n\nSKILLS\n------\n`;
+        skillsList.forEach(s => { let sk = charData.skills[s]; if(sk.rank > 0 || sk.tag) text += `${s}: Rank ${sk.rank} ${sk.tag ? '[TAG]' : ''}\n`; });
+        
+        text += `\nWEAPONS\n-------\n`;
+        if(charData.weapons && charData.weapons.length > 0) {
+            charData.weapons.forEach(w => {
+                text += `${w.name} | Dmg: ${w.dmg} CD | Eff: ${w.eff} | Qual: ${w.qual} | Ammo: ${w.mag}/${w.pool}\n`;
+            });
+        } else { text += "No weapons equipped.\n"; }
+
+        text += `\nPERKS & TRAITS\n--------------\nTrait: ${originRules[charData.origin].traitName}\nEffect: ${originRules[charData.origin].traitDesc}\n`;
+        if(charData.traits.length > 0) text += `Selected Traits: ${charData.traits.join(", ")}\n`;
+        charData.perks.forEach(p => text += `${p}\n`);
+        text += `\nEQUIPMENT\n---------\n${charData.equipment}`;
+        playSavingAnimation(text, name);
+    }
+
+    function saveCharacterJSON() { let dataStr = JSON.stringify(charData, null, 2); let blob = new Blob([dataStr], {type: "application/json"}); let url = URL.createObjectURL(blob); let link = document.createElement("a"); link.download = `${charData.name.replace(/\s+/g, '_')}_Data.json`; link.href = url; link.click(); }
+    
+    function loadCharacterFile() {
+        let file = document.getElementById("loadFile").files[0]; if(!file) return; let reader = new FileReader();
+        reader.onload = function(e) { 
+            try { 
+                charData = JSON.parse(e.target.result); 
+                if(!charData.weapons) charData.weapons = []; // Compatibility check
+                document.getElementById("builderView").classList.add("hidden"); 
+                document.getElementById("sheetView").style.display = "block"; 
+                document.getElementById("managementControls").style.display = "block"; 
+                calcDerived(); 
+                document.getElementById("manageEquipment").value = charData.equipment; 
+                renderSheet(); 
+            } catch(err) { alert("Error loading file. Make sure it is a valid .json save file."); } 
+        }; reader.readAsText(file);
+    }
+
+    function playSavingAnimation(fileContent, fileName) {
+        const overlay = document.getElementById('terminalOverlay');
+        const contentDiv = document.getElementById('terminalContent');
+        const successDiv = document.getElementById('successMessageContainer');
+        const mascotImg = document.getElementById('finalGif');
+        const finalText = document.getElementById('finalText');
+        contentDiv.innerText = ""; contentDiv.style.display = "block"; successDiv.style.display = "none"; overlay.style.display = "flex"; mascotImg.style.opacity = "0"; finalText.style.opacity = "0";
+        let bootLoop = null; let successSfx = null;
+        if(BOOT_START_MP3.length > 50) { try { new Audio(BOOT_START_MP3).play(); } catch(e) {} }
+        if(VAULT_BOY_GIF.length > 50) { mascotImg.src = VAULT_BOY_GIF; }
+        const bootLines = [ "PIP-OS V7.1.0.8", "COPYRIGHT 2075 ROBCO", "LOADER V1.1", "EXEC VERSION 41.10", "64k RAM SYSTEM", "38911 BYTES FREE", "NO HOLOTAPE FOUND", "LOAD ROM(1): DEITRIX 303" ];
+        let delay = 0;
+        bootLines.forEach(line => { setTimeout(() => { contentDiv.innerText += line + "\n"; }, delay); delay += 500; });
+        const dataLines = fileContent.split('\n');
+        setTimeout(() => {
+            if(TEXT_LOOP_MP3.length > 50) { bootLoop = new Audio(TEXT_LOOP_MP3); bootLoop.loop = true; bootLoop.play().catch(e => {}); }
+            let dataIndex = 0; const scrollSpeed = 10000 / dataLines.length; 
+            const interval = setInterval(() => { if(dataIndex < dataLines.length) { contentDiv.innerText += dataLines[dataIndex] + "\n"; contentDiv.scrollTop = contentDiv.scrollHeight; dataIndex++; } else { clearInterval(interval); } }, scrollSpeed);
+        }, 4000);
+        setTimeout(() => {
+            if(bootLoop) { bootLoop.pause(); bootLoop.currentTime = 0; }
+            if(SUCCESS_SFX_MP3.length > 50) { successSfx = new Audio(SUCCESS_SFX_MP3); successSfx.play().catch(e => {}); }
+            contentDiv.style.display = "none"; successDiv.style.display = "block"; 
+            const statOverlay = document.getElementById("staticOverlay"); statOverlay.classList.add("channel-change"); setTimeout(() => { statOverlay.classList.remove("channel-change"); }, 400);
+            mascotImg.classList.add('fade-in'); setTimeout(() => { finalText.classList.add('fade-in'); }, 1000);
+            setTimeout(() => { triggerFileDownload(fileContent, fileName); setTimeout(() => { overlay.style.display = "none"; }, 1000); }, 3000);
+        }, 14500); 
+    }
+    function updateInventory() { charData.equipment = document.getElementById("manageEquipment").value; renderSheet(); }
+    function triggerFileDownload(text, name) { let blob = new Blob([text], {type: "text/plain"}); let url = URL.createObjectURL(blob); let link = document.createElement("a"); link.download = `${name.replace(/\s+/g, '_')}_Sheet.txt`; link.href = url; link.click(); }
+</script>
+</body>
+</html>
