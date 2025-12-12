@@ -74,3 +74,5 @@ It handles everything from **Character Creation** (Origins, S.P.E.C.I.A.L., Skil
 ```
 
 *Disclaimer: This is a fan-made tool. Fallout is a trademark of Bethesda Softworks LLC. This tool is not affiliated with Modiphius Entertainment or Bethesda.*
+
+If you wish to donate you can use this link https://donate.stripe.com/9B64gz5Ee87tdBz5tO1Fe07
