@@ -63,10 +63,6 @@
         .origin-trait-text { color: #bbb; margin-bottom: 10px; padding-left: 10px; border-left: 2px solid var(--accent-color); }
         .origin-list { margin: 0; padding-left: 20px; color: #bbb; }
         .origin-list li { margin-bottom: 2px; }
-
-        .origin-special-box { background: #1a1a1a; border: 1px solid #444; border-radius: 4px; padding: 12px; margin-top: 10px; }
-        .origin-special-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-        .muted-help { font-size: 0.85rem; color: #888; }
         .added-perk-item { background: #222; border: 1px solid #444; padding: 5px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         #sheetView { max-width: 1000px; margin: 0 auto; padding: 20px; display: none; transition: all 0.3s ease; }
         
@@ -172,20 +168,6 @@
                 </div>
             </div>
             <div class="origin-info-box" id="originInfoBox"></div>
-            <div id="originSpecialOptions" class="origin-special-box hidden">
-                <div class="origin-special-row">
-                    <label for="mrHandyNoPincer" style="margin:0; color:#ddd;">No Pincer?</label>
-                    <input type="checkbox" id="mrHandyNoPincer" onchange="handleMrHandyOptionChange()">
-                </div>
-                <div class="muted-help" id="mrHandyRuleText">Choosing No Pincer blocks unarmed attacks and Lockpick/Repair/Throwing tests.</div>
-                <div class="origin-special-row">
-                    <label style="margin:0; color:#ddd;">Arm Attachments (pick up to 3)</label>
-                    <select id="mrHandyAttachment1" onchange="handleMrHandyOptionChange()"></select>
-                    <select id="mrHandyAttachment2" onchange="handleMrHandyOptionChange()"></select>
-                    <select id="mrHandyAttachment3" onchange="handleMrHandyOptionChange()"></select>
-                </div>
-                <div class="muted-help" id="mrHandyAttachmentSummary"></div>
-            </div>
         </div>
 
         <div class="section">
@@ -247,7 +229,6 @@
                 <div style="color:#888; font-size:0.8rem; margin-bottom:10px;">Select a weapon to auto-fill stats, or type your own custom stats. You can add duplicate weapons.</div>
                 
                 <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <input type="text" id="builderWeaponFilter" placeholder="Filter templates..." oninput="filterWeaponPresets('builder')" style="flex:1;">
                     <select id="builderWeaponPreset" onchange="fillWeaponPreset('builder')" style="flex:1;">
                         <option value="">-- Select Template --</option>
                     </select>
@@ -317,7 +298,6 @@
             <label style="color:var(--accent-color); font-weight:bold; font-size:1.1em;">Add New Weapon</label>
             
             <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <input type="text" id="managerWeaponFilter" placeholder="Filter templates..." oninput="filterWeaponPresets('manager')" style="flex:1;">
                 <select id="managerWeaponPreset" onchange="fillWeaponPreset('manager')" style="flex:1;">
                     <option value="">-- Select Template --</option>
                 </select>
@@ -355,8 +335,6 @@
             <button onclick="printSheet()">Save as PDF / Print</button>
             <button onclick="saveCharacterText()">Save Text File (.txt)</button>
             <button class="secondary" onclick="saveCharacterJSON()">Export Save Data (.json)</button>
-            <button class="secondary" onclick="persistLocalSave()">Save to Browser</button>
-            <button class="secondary" onclick="loadLocalSave()">Load Browser Save</button>
         </div>
     </div>
 
@@ -467,8 +445,6 @@
     
     const skillsList = ["Athletics","Barter","Big Guns","Energy Weapons","Explosives","Lockpick","Medicine","Melee Weapons","Pilot","Repair","Science","Small Guns","Sneak","Speech","Survival","Throwing","Unarmed"];
     const skillAttrs = { "Athletics":"STR", "Barter":"CHA", "Big Guns":"END", "Energy Weapons":"PER", "Explosives":"PER", "Lockpick":"PER", "Medicine":"INT", "Melee Weapons":"STR", "Pilot":"PER", "Repair":"INT", "Science":"INT", "Small Guns":"AGI", "Sneak":"AGI", "Speech":"CHA", "Survival":"END", "Throwing":"AGI", "Unarmed":"STR" };
-    const LOCAL_SAVE_KEY = "fallout2d20_character_autosave_v1";
-    const mrHandyAttachments = ["Pincer", "Buzz Blade", "Circular Saw", "Flamer", "Laser", "Claw", "Handy Rock Thrower", "Stabilizer Arm"];
     
     // FULL WEAPON DATABASE
     const commonWeapons = [
@@ -735,7 +711,7 @@
         "Brotherhood": { name: "Brotherhood Initiate", source: "Core Rulebook p.51", desc: "Born from the terrible revelations of the Mariposa Rebellion, you are dedicated to the preservation of technology.", traitName: "Chain That Binds", traitDesc: "Gain 1 extra Tag Skill.", equipment: ["BoS Initiate", "BoS Scribe"], limits: {}, bonusTags: 1 },
         "Ghoul": { name: "Ghoul", source: "Core Rulebook p.52", desc: "Necrotic post-humans immune to radiation.", traitName: "Necrotic Post-Human", traitDesc: "Healed by Rads. Survival is Tag Skill.", equipment: ["Mercenary", "Raider", "Settler", "Trader", "Wanderer"], limits: {} },
         "Super Mutant": { name: "Super Mutant", source: "Core Rulebook p.53", desc: "Infected with F.E.V., you are a massive, muscular killing machine. You are incredibly strong and tough, but often lack intelligence or charisma.", traitName: "Forced Evolution", traitDesc: "STR+2, END+2, Int/Cha Max 6. Immune Rads/Poison.", equipment: ["Brute", "Skirmisher"], limits: {int:6, cha:6, str:12, end:12}, mods: {str:2, end:2} },
-        "Mister Handy": { name: "Mister Handy", source: "Core Rulebook p.54", desc: "A reliable General Atomics robot with distinct personality programming.", traitName: "Mister Handy Robot", traitDesc: "360° vision, Perception tests using sight/smell are easier by 1, immune to radiation and poison, fixed carry weight 150 lbs, and you recover HP with repairs only.", equipment: ["Miss Nanny", "Mister Farmhand", "Mister Gutsy", "Mister Handy", "Nurse Handy"], limits: {}, robot: true, fixedCarry: 150 },
+        "Mister Handy": { name: "Mister Handy", source: "Core Rulebook p.54", desc: "A reliable General Atomics robot with distinct personality programming.", traitName: "Robot", traitDesc: "360 view, fixed carry 150 lbs, no healing.", equipment: ["Miss Nanny", "Mister Farmhand", "Mister Gutsy", "Mister Handy", "Nurse Handy"], limits: {}, robot: true, fixedCarry: 150 },
         "Minuteman": { name: "Commonwealth Minuteman", source: "Settler's Guide p.10", desc: "Protect the people at a minute's notice.", traitName: "United We Stand", traitDesc: "Settlements +Def. Gain Energy Weapons or Small Guns tag. +1 DR in cover.", equipment: ["Minuteman Militia"], limits: {} },
         "NCR": { name: "New California Republic", source: "Settler's Guide p.11", desc: "Citizens of the New California Republic.", traitName: "New Californian", traitDesc: "Choose two traits from the NCR list or Survivor list.", equipment: ["NCR Trooper", "NCR Ranger"], limits: {}, traits: true, traitListKey: "NCR" },
         "Tribal": { name: "Tribal", source: "Wanderer's Guide p.16", desc: "Wastelanders living in close-knit tribes.", traitName: "Tribal", traitDesc: "Choose two traits from the Tribal list.", equipment: ["Hunter", "Gatherer", "Warrior"], limits: {}, traits: true, traitListKey: "Tribal" },
@@ -746,9 +722,9 @@
         "Gen2Synth": { name: "Generation 2 Synth", source: "Winter of Atom p.24", desc: "Mechanical androids.", traitName: "More Than Human (Gen 2)", traitDesc: "Robot rules. Immune Poison/Rad/Disease.", equipment: ["Institute Trooper"], limits: {}, robot: true },
         "ChildOfAtom": { name: "Child of Atom", source: "Winter of Atom p.23", desc: "Worshippers of the glow.", traitName: "Rad Sponge", traitDesc: "Heal HP when taking Rad damage.", equipment: ["Confessor", "Zealot"], limits: {} },
         "BrotherhoodOutcast": { name: "Brotherhood Outcast", source: "Wanderer's Guide p.12", desc: "Former BoS member.", traitName: "Outcast", traitDesc: "+1 Tag Skill. Gain junk.", equipment: ["Ex-Knight", "Ex-Scribe"], limits: {}, bonusTags: 1 },
-        "EnclaveRemnant": { name: "Enclave Remnant", source: "Royal Flush p.10", desc: "Hiding survivors of the Enclave.", traitName: "Old World Training", traitDesc: "Gain 1 additional Tag Skill (Science, Energy Weapons, or Pilot) and access to Enclave bunkers.", equipment: ["Officer", "Scientist"], limits: {}, bonusTags: 1 },
+        "EnclaveRemnant": { name: "Enclave Remnant", source: "Royal Flush p.10", desc: "Hiding survivors of the Enclave.", traitName: "Hidden Past", traitDesc: "Gain Tag: Science, Energy Weapons, or Pilot. Access to Enclave bunkers.", equipment: ["Officer", "Scientist"], limits: {} },
         "FollowerApocalypse": { name: "Follower of the Apocalypse", source: "Royal Flush p.13", desc: "Humanitarian educators.", traitName: "Peace and Knowledge", traitDesc: "Gain Tag: Medicine, Science, or Speech.", equipment: ["Doctor", "Educator"], limits: {} },
-        "Nightkin": { name: "Nightkin", source: "Wanderer's Guide p.14", desc: "Stealth-addicted Super Mutants.", traitName: "Stealth Addiction", traitDesc: "You can only have 2 Tag Skills at character creation and begin with a Stealth Boy.", equipment: ["Nightkin Master", "Nightkin Elite"], limits: {int:8, cha:8, str:12, end:12}, mods: {str:2, end:2}, setMaxTags: 2 },
+        "Nightkin": { name: "Nightkin", source: "Wanderer's Guide p.14", desc: "Stealth-addicted Super Mutants.", traitName: "Master's Chosen", traitDesc: "Max 2 Tags. Start with Stealth Boy.", equipment: ["Nightkin Master", "Nightkin Elite"], limits: {int:8, cha:8, str:12, end:12}, mods: {str:2, end:2}, setMaxTags: 2 },
         "Viper": { name: "Viper Initiate", source: "Royal Flush p.17", desc: "Cultists using poison.", traitName: "Viper's Kiss", traitDesc: "Coated melee weapons inflict Persistent Poison damage.", equipment: ["Pit Viper", "Fang"], limits: {} }
     };
 
@@ -759,95 +735,9 @@
     let charData = { 
         name: "", origin: "Survivor", level: 1, xp: 0, 
         attributes: {str:5, per:5, end:5, cha:5, int:5, agi:5, lck:5}, 
-        skills: {}, perks: [], equipment: "", weapons: [], derived: {}, traits: [],
-        originOptions: { noPincer: false, attachments: [] } 
+        skills: {}, perks: [], equipment: "", weapons: [], derived: {}, traits: [] 
     };
     let builderPerks = []; let isPipBoyMode = true; let currentTagLimit = 3;
-
-    function ensureOriginOptionsDefaults() {
-        if(!charData.originOptions || typeof charData.originOptions !== "object") {
-            charData.originOptions = { noPincer: false, attachments: [] };
-        }
-        if(!Array.isArray(charData.originOptions.attachments)) charData.originOptions.attachments = [];
-    }
-
-    function populateMrHandyAttachmentSelectors() {
-        ["mrHandyAttachment1","mrHandyAttachment2","mrHandyAttachment3"].forEach((id, idx) => {
-            const sel = document.getElementById(id);
-            if(!sel) return;
-            sel.innerHTML = '<option value="">-- None --</option>' + mrHandyAttachments.map(a => `<option value="${a}">${a}</option>`).join('');
-            sel.value = charData.originOptions.attachments[idx] || "";
-        });
-    }
-
-    function updateMrHandyUiState() {
-        const isMrHandy = document.getElementById("origin").value === "Mister Handy";
-        const wrapper = document.getElementById("originSpecialOptions");
-        wrapper.classList.toggle("hidden", !isMrHandy);
-        if(!isMrHandy) return;
-
-        ensureOriginOptionsDefaults();
-        document.getElementById("mrHandyNoPincer").checked = !!charData.originOptions.noPincer;
-        populateMrHandyAttachmentSelectors();
-
-        const chosen = ["mrHandyAttachment1","mrHandyAttachment2","mrHandyAttachment3"].map(id => document.getElementById(id).value).filter(Boolean);
-        const uniqueCount = new Set(chosen).size;
-        const summary = uniqueCount !== chosen.length
-            ? "Duplicate attachment selected. Pick 3 different attachments."
-            : (chosen.length ? `Selected: ${chosen.join(", ")}` : "No attachments selected yet.");
-        document.getElementById("mrHandyAttachmentSummary").innerText = summary;
-    }
-
-    function handleMrHandyOptionChange() {
-        ensureOriginOptionsDefaults();
-        charData.originOptions.noPincer = document.getElementById("mrHandyNoPincer").checked;
-        charData.originOptions.attachments = ["mrHandyAttachment1","mrHandyAttachment2","mrHandyAttachment3"].map(id => document.getElementById(id).value).filter(Boolean);
-        updateMrHandyUiState();
-        recalculateGlobals();
-    }
-
-    function filterWeaponPresets(mode) {
-        const filterId = mode === 'builder' ? 'builderWeaponFilter' : 'managerWeaponFilter';
-        const presetId = mode === 'builder' ? 'builderWeaponPreset' : 'managerWeaponPreset';
-        const term = (document.getElementById(filterId).value || '').trim().toLowerCase();
-        const sel = document.getElementById(presetId);
-        Array.from(sel.options).forEach((opt, idx) => {
-            if(idx === 0) { opt.hidden = false; return; }
-            opt.hidden = term && !opt.text.toLowerCase().includes(term);
-        });
-    }
-
-    function persistLocalSave(silent=false) {
-        try {
-            ensureOriginOptionsDefaults();
-            localStorage.setItem(LOCAL_SAVE_KEY, JSON.stringify(charData));
-            if(!silent) alert("Saved to browser storage.");
-        } catch (err) {
-            if(!silent) alert("Unable to save in this browser/session.");
-        }
-    }
-
-    function loadLocalSave(silent=false) {
-        try {
-            const raw = localStorage.getItem(LOCAL_SAVE_KEY);
-            if(!raw) { if(!silent) alert("No browser save found yet."); return false; }
-            charData = JSON.parse(raw);
-            if(!charData.weapons) charData.weapons = [];
-            if(!charData.skills) charData.skills = {};
-            ensureOriginOptionsDefaults();
-            document.getElementById("builderView").classList.add("hidden");
-            document.getElementById("sheetView").style.display = "block";
-            document.getElementById("managementControls").style.display = "block";
-            document.getElementById("manageEquipment").value = charData.equipment || "";
-            calcDerived();
-            renderSheet();
-            if(!silent) alert("Loaded browser save.");
-            return true;
-        } catch (err) {
-            if(!silent) alert("Browser save exists but could not be loaded.");
-            return false;
-        }
-    }
 
     window.onload = () => {
         // Fix for "Select same trait" popup on open - clear selections on load
@@ -892,12 +782,7 @@
             document.getElementById('headerMascot').innerHTML = mascotSVG;
 
             skillsList.forEach(s => charData.skills[s] = {tag: false, rank: 0});
-            ensureOriginOptionsDefaults();
-            populateMrHandyAttachmentSelectors();
             applyOriginRules(); // Apply rules immediately
-            if(localStorage.getItem(LOCAL_SAVE_KEY) && confirm("Found a browser autosave. Load it now?")) {
-                loadLocalSave(true);
-            }
         });
     };
 
@@ -1134,35 +1019,6 @@
         skillTracker.innerText = skillSpent;
         skillTracker.style.color = skillSpent > maxSkillPoints ? "var(--danger-color)" : "var(--accent-color)";
 
-        if (o === "Mister Handy" && charData.originOptions.noPincer) {
-            ["Lockpick", "Repair", "Throwing"].forEach(skill => {
-                const rankInput = document.getElementById(`rank_${skill}`);
-                const tagInput = document.getElementById(`tag_${skill}`);
-                rankInput.value = 0;
-                rankInput.disabled = true;
-                tagInput.checked = false;
-                tagInput.disabled = true;
-            });
-        } else {
-            ["Lockpick", "Repair", "Throwing"].forEach(skill => {
-                document.getElementById(`rank_${skill}`).disabled = false;
-                document.getElementById(`tag_${skill}`).disabled = false;
-            });
-        }
-
-        currentTagCount = 0;
-        skillSpent = 0;
-        skillsList.forEach(s => {
-            const isTagged = document.getElementById(`tag_${s}`).checked;
-            const rank = parseInt(document.getElementById(`rank_${s}`).value) || 0;
-            if(isTagged) currentTagCount++;
-            skillSpent += isTagged ? Math.max(0, rank - 2) : rank;
-        });
-        tagEl.innerText = `${tagLimit - currentTagCount} remaining`;
-        tagEl.style.color = (tagLimit - currentTagCount) < 0 ? "var(--danger-color)" : "#aaa";
-        skillTracker.innerText = skillSpent;
-        skillTracker.style.color = skillSpent > maxSkillPoints ? "var(--danger-color)" : "var(--accent-color)";
-
         // 7. Update Perk Description State
         updatePerkDesc('perkSelect', 'perkDesc');
         
@@ -1230,7 +1086,6 @@
                 el.value = base;
             });
             
-            updateMrHandyUiState();
             recalculateGlobals();
         });
     }
@@ -1332,8 +1187,7 @@
             let rank = parseInt(document.getElementById(`rank_${s}`).value);
             charData.skills[s] = { tag: tagged, rank: rank };
         });
-
-        charData.traits = [];
+        
         if(!document.getElementById("traitSelector").classList.contains("hidden")) {
             const t1 = document.getElementById("trait1").value;
             const t2 = document.getElementById("trait2").value;
@@ -1342,18 +1196,12 @@
         }
         
         charData.perks = [...builderPerks];
-        ensureOriginOptionsDefaults();
-        if(charData.origin === "Mister Handy") {
-            charData.originOptions.noPincer = document.getElementById("mrHandyNoPincer").checked;
-            charData.originOptions.attachments = ["mrHandyAttachment1","mrHandyAttachment2","mrHandyAttachment3"].map(id => document.getElementById(id).value).filter(Boolean);
-        }
         calcDerived();
         document.getElementById("builderView").classList.add("hidden");
         document.getElementById("sheetView").style.display = "block";
         document.getElementById("managementControls").style.display = "block";
         document.getElementById("manageEquipment").value = charData.equipment;
         renderSheet();
-        persistLocalSave(true);
     }
 
     function calcDerived() {
@@ -1387,7 +1235,6 @@
     }
 
     function renderSheet() {
-        ensureOriginOptionsDefaults();
         document.getElementById("sheetName").innerText = charData.name;
         document.getElementById("sheetOrigin").innerText = `${originRules[charData.origin].name} — ${originRules[charData.origin].source}`;
         document.getElementById("sheetLevel").innerText = charData.level;
@@ -1411,10 +1258,6 @@
         });
         const perksDiv = document.getElementById("sheetPerksList");
         perksDiv.innerHTML = `<div class="perk-item"><strong>Trait:</strong> ${originRules[charData.origin].traitName}</div>`;
-        if(charData.origin === "Mister Handy") {
-            const mhInfo = `No Pincer: ${charData.originOptions.noPincer ? "Yes" : "No"} | Attachments: ${(charData.originOptions.attachments || []).join(", ") || "None"}`;
-            perksDiv.innerHTML += `<div class="perk-item"><strong>Robot Config:</strong> ${mhInfo}</div>`;
-        }
         if(charData.traits.length > 0) { perksDiv.innerHTML += `<div class="perk-item"><strong>Sub-Traits:</strong> ${charData.traits.join(", ")}</div>`; }
         charData.perks.forEach((p, index) => { perksDiv.innerHTML += `<div class="perk-item"><span>${p}</span><button class="delete-btn" onclick="removePerk(${index})">X</button></div>`; });
         document.getElementById("sheetEquipment").innerHTML = `<div style="white-space: pre-wrap;">${charData.equipment}</div>`;
@@ -1423,7 +1266,7 @@
         renderWeapons();
     }
 
-    function removePerk(index) { if(confirm("Remove this perk?")) { charData.perks.splice(index, 1); calcDerived(); renderSheet(); persistLocalSave(true); } }
+    function removePerk(index) { if(confirm("Remove this perk?")) { charData.perks.splice(index, 1); calcDerived(); renderSheet(); } }
     function toggleTheme() {
         isPipBoyMode = !isPipBoyMode;
         const sheet = document.getElementById("sheetView");
@@ -1431,10 +1274,10 @@
         else { sheet.classList.remove("theme-pipboy"); sheet.classList.add("theme-paper"); }
         renderSheet();
     }
-    function addXP() { charData.xp = parseInt(document.getElementById("manageXP").value) || 0; let newLevel = 1; for(let i=0; i<xpTable.length; i++) { if(charData.xp >= xpTable[i]) newLevel = i+1; } if(newLevel > charData.level) { alert(`Level Up! You are now level ${newLevel}. +1 Max HP.`); charData.level = newLevel; calcDerived(); } renderSheet(); updatePerkDesc('managePerkSelect', 'managePerkDesc'); persistLocalSave(true); }
-    function levelUp() { charData.level++; charData.xp = xpTable[charData.level-1] || charData.xp; calcDerived(); renderSheet(); updatePerkDesc('managePerkSelect', 'managePerkDesc'); persistLocalSave(true); }
-    function addPerkFromManager() { let pIdx = document.getElementById("managePerkSelect").value; if(pIdx !== "") { let pName = perksData[pIdx].name; if(charData.perks.includes(pName)) { alert("You already have this perk!"); } else { charData.perks.push(pName); calcDerived(); renderSheet(); persistLocalSave(true); } } }
-    function increaseSkillRank() { let s = document.getElementById("manageSkillSelect").value; if(charData.skills[s].rank < 6) { charData.skills[s].rank++; renderSheet(); persistLocalSave(true); } }
+    function addXP() { charData.xp = parseInt(document.getElementById("manageXP").value) || 0; let newLevel = 1; for(let i=0; i<xpTable.length; i++) { if(charData.xp >= xpTable[i]) newLevel = i+1; } if(newLevel > charData.level) { alert(`Level Up! You are now level ${newLevel}. +1 Max HP.`); charData.level = newLevel; calcDerived(); } renderSheet(); updatePerkDesc('managePerkSelect', 'managePerkDesc'); }
+    function levelUp() { charData.level++; charData.xp = xpTable[charData.level-1] || charData.xp; calcDerived(); renderSheet(); updatePerkDesc('managePerkSelect', 'managePerkDesc'); }
+    function addPerkFromManager() { let pIdx = document.getElementById("managePerkSelect").value; if(pIdx !== "") { let pName = perksData[pIdx].name; if(charData.perks.includes(pName)) { alert("You already have this perk!"); } else { charData.perks.push(pName); calcDerived(); renderSheet(); } } }
+    function increaseSkillRank() { let s = document.getElementById("manageSkillSelect").value; if(charData.skills[s].rank < 6) { charData.skills[s].rank++; renderSheet(); } }
     function printSheet() { window.print(); }
     
     // --- SAVE AND LOAD ---
@@ -1452,13 +1295,6 @@
 
         text += `\nPERKS & TRAITS\n--------------\nTrait: ${originRules[charData.origin].traitName}\nEffect: ${originRules[charData.origin].traitDesc}\n`;
         if(charData.traits.length > 0) text += `Selected Traits: ${charData.traits.join(", ")}\n`;
-        if(charData.origin === "Mister Handy") {
-            const handTxt = [
-                `No Pincer: ${charData.originOptions.noPincer ? "Yes" : "No"}`,
-                `Attachments: ${(charData.originOptions.attachments || []).join(", ") || "None selected"}`
-            ].join(" | ");
-            text += `${handTxt}\n`;
-        }
         charData.perks.forEach(p => text += `${p}\n`);
         text += `\nEQUIPMENT\n---------\n${charData.equipment}`;
         playSavingAnimation(text, name);
@@ -1472,14 +1308,12 @@
             try { 
                 charData = JSON.parse(e.target.result); 
                 if(!charData.weapons) charData.weapons = []; // Compatibility check
-                ensureOriginOptionsDefaults();
                 document.getElementById("builderView").classList.add("hidden"); 
                 document.getElementById("sheetView").style.display = "block"; 
                 document.getElementById("managementControls").style.display = "block"; 
                 calcDerived(); 
                 document.getElementById("manageEquipment").value = charData.equipment; 
                 renderSheet(); 
-                persistLocalSave(true);
             } catch(err) { alert("Error loading file. Make sure it is a valid .json save file."); } 
         }; reader.readAsText(file);
     }
@@ -1512,7 +1346,7 @@
             setTimeout(() => { triggerFileDownload(fileContent, fileName); setTimeout(() => { overlay.style.display = "none"; }, 1000); }, 3000);
         }, 14500); 
     }
-    function updateInventory() { charData.equipment = document.getElementById("manageEquipment").value; renderSheet(); persistLocalSave(true); }
+    function updateInventory() { charData.equipment = document.getElementById("manageEquipment").value; renderSheet(); }
     function triggerFileDownload(text, name) { let blob = new Blob([text], {type: "text/plain"}); let url = URL.createObjectURL(blob); let link = document.createElement("a"); link.download = `${name.replace(/\s+/g, '_')}_Sheet.txt`; link.href = url; link.click(); }
 </script>
 </body>
