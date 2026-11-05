@@ -27,11 +27,13 @@ It handles everything from **Character Creation** (Origins, S.P.E.C.I.A.L., Skil
 ### 1. Character Builder
 *   **Full Origin Database:** Includes all major Origins (Survivor, Brotherhood, Super Mutant, Ghoul, Synth, Mister Handy, etc.) with automatic stat adjustments (e.g., Super Mutants get STR/END limits set to 12).
 *   **Trait Logic:** Automatically populates the correct Traits based on your Origin (NCR, Tribal, Survivor lists).
-*   **Perk Selection:** Complete database of perks with requirement checks (Level, S.P.E.C.I.A.L. stats).
+*   **Perk Selection:** 198 perks taken straight from the Core Rulebook, Settler's Guide and Wanderer's Guide (printed page numbers shown). Multi-rank perks can be taken again for the next rank, and the level requirement rises per rank exactly as the books say (e.g. Life Giver: level 5, then 10, then 15). The dropdown marks each perk: ✖ requirements not met, ✔ MAX rank reached, ★ rare perk found in play. If you pick a perk you don't qualify for, the app warns you and lets you override it (for GM-approved exceptions).
+*   **Starting Equipment:** Each origin lists its real equipment packs from the books (expand one and press "Use this pack"). "Add items from my Tag skills" adds the Core p.81 tag skill items.
+*   **Skill Caps:** No skill above rank 3 before level 3, and Super Mutants and Nightkin are capped at rank 4.
 *   **Skill Tagging:** Checking a "Tag" box automatically calculates your +2 Skill Rank bonus.
 
 ### 2. The Weapon Fabricator
-*   **Database:** Pre-loaded with **115+ weapons** from the wasteland (Small Guns, Energy, Big Guns, Melee, Explosives).
+*   **Database:** Pre-loaded with **144 weapons** taken from the weapon tables in the Core Rulebook, Settler's Guide, Wanderer's Guide and Winter of Atom, grouped by skill, with damage, effects, range, qualities and rarity exactly as printed.
 *   **Customization:** Select a preset (e.g., "10mm Pistol") and modify it, or create a completely custom "Homebrew" weapon from scratch.
 *   **Ammo Tracking:** Track Mag capacity vs. Ammo Pool directly on the sheet.
 
@@ -54,6 +56,16 @@ It handles everything from **Character Creation** (Origins, S.P.E.C.I.A.L., Skil
 1.  Download the `.html` file.
 2.  **That's it.** There is no installation.
 3.  Double-click the file to open it in your web browser.
+
+## Armor, weapon mods and magazines
+*   **Armor:** 170 armor, clothing, outfit and power armor pieces plus 35 robot plating parts, taken from the book tables. Single arm or leg pieces ask which side. The sheet shows Physical, Energy and Radiation DR for each of the six body locations (worn armor, mods, plus perk and origin bonuses).
+*   **Armor mods:** 141 mods, added to a chosen piece; their DR changes count toward that piece. Perk requirements (for example Armorer) are checked against your perks and can be overridden.
+*   **Weapon mods:** 257 mods from the Core Rulebook and the other books, attached to a weapon from your list. Their effects are shown on the sheet; damage is not changed automatically. The mod list is filtered to the mods the books allow for that weapon (about 85 weapons have a list read from the books); tick "Show every mod" to override. A second mod in the same slot asks for confirmation.
+*   **Books and magazines:** all 20 publications from Core p.172-179 plus the four issues on the Winter of Atom loot table. Reading one gives you a temporary perk on the sheet. Press Use when you spend it; at your next level up the app asks whether to learn it permanently or forget it (Core p.172).
+
+## Perk filter and override
+
+Both perk lists (character builder and the sheet screen) have two checkboxes. "Only show perks I can take now" hides every perk you do not qualify for (SPECIAL, level, rank and robot rules). "Override: allow any perk" shows all perks and lets you add one you do not qualify for, after telling you exactly what is missing. With override off, an unqualified perk is refused and the missing requirements are listed.
 
 ## 🕹️ Controls
 *   **Hover:** Hover over perks to see requirements and descriptions.
